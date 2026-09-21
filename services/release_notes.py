@@ -1,4 +1,5 @@
 RELEASES = [
+    {"version":"0.5.0","date":"2026-09-21","title":"Priority Drill-Down & Corporate Proxy","items":["Made all Priority Review cards clickable with filtered CVE or asset results.","Added Known Exploited, High EPSS, Assets with KEV, and Critical Findings drill-downs.","Added persistent corporate proxy configuration for FIRST EPSS and CISA KEV downloads.","Added proxy Save, Test, and Clear/Disable controls with optional authentication.","Added a separate persistent configuration volume; Rapid7 analysis remains temporary.","Added TLS-inspection CA guidance without disabling certificate verification."]},
     {
         "version": "0.4.1",
         "date": "2026-09-21",

@@ -2,7 +2,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.4.1
+## Current Release — v0.5.0
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -70,6 +70,13 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.5.0 — 2026-09-21 — Priority Drill-Down & Corporate Proxy
+- Clickable Priority Review drill-downs for KEV, High EPSS, Assets with KEV, and Critical Findings.
+- Persistent proxy configuration for EPSS/CISA KEV with Save, Test, Clear/Disable and optional authentication.
+- Separate configuration volume; Rapid7 analysis remains temporary.
+- TLS-inspection CA guidance; TLS verification remains enabled.
+
 
 ## v0.4.1 — 2026-09-21 — Shared Investigation Session Hotfix
 - Fixed CVE/Asset Investigation links losing the current analysis when Gunicorn routed requests to another worker.

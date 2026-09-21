@@ -7,10 +7,10 @@
 <section id="priority" class="panel tabpanel active">
 <h2>Priority Review</h2><p class="muted">Transparent review categories based on objective threat signals. VulnPrioritizer does not assign a proprietary organizational risk score.</p>
 <div class="prioritygrid">
-<div class="prioritycard"><span>Known Exploited</span><b>{{metrics.kev_cves}}</b><small>CISA KEV matches</small></div>
-<div class="prioritycard"><span>High EPSS</span><b>{{metrics.high_epss_cves}}</b><small>EPSS ≥ 10%</small></div>
-<div class="prioritycard"><span>Assets with KEV</span><b>{{metrics.kev_assets}}</b><small>Rapid7 assets exposed to KEV CVEs</small></div>
-<div class="prioritycard"><span>Critical Findings</span><b>{{metrics.critical_findings}}</b><small>CVSS ≥ 9 findings</small></div>
+<a class="prioritycard prioritylink" href="{{url_for('priority_drilldown',analysis_id=analysis_id,category='kev')}}"><span>Known Exploited</span><b>{{metrics.kev_cves}}</b><small>CISA KEV matches</small><em>View vulnerabilities →</em></a>
+<a class="prioritycard prioritylink" href="{{url_for('priority_drilldown',analysis_id=analysis_id,category='epss')}}"><span>High EPSS</span><b>{{metrics.high_epss_cves}}</b><small>EPSS ≥ 10%</small><em>View vulnerabilities →</em></a>
+<a class="prioritycard prioritylink" href="{{url_for('priority_drilldown',analysis_id=analysis_id,category='kev-assets')}}"><span>Assets with KEV</span><b>{{metrics.kev_assets}}</b><small>Rapid7 assets exposed to KEV CVEs</small><em>View assets →</em></a>
+<a class="prioritycard prioritylink" href="{{url_for('priority_drilldown',analysis_id=analysis_id,category='critical')}}"><span>Critical Findings</span><b>{{metrics.critical_findings}}</b><small>CVSS ≥ 9 findings</small><em>View findings →</em></a>
 </div>
 <div class="guidance"><b>How to use this view:</b> KEV identifies known exploitation, EPSS estimates exploitation probability, and CVSS describes technical severity. Review these signals together rather than treating any single metric as a complete measure of organizational risk.</div>
 </section>

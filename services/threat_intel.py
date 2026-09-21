@@ -10,10 +10,15 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import requests
+from services.network_config import NetworkConfig
 
 INTEL_ROOT = os.environ.get("INTEL_ROOT", "/app/intel")
 EPSS_URL = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+
+def _http_get(*args, **kwargs):
+    kwargs["proxies"] = NetworkConfig().proxies()
+    return requests.get(*args, **kwargs)
 
 class ThreatIntelManager:
     def __init__(self):
@@ -94,7 +99,7 @@ class ThreatIntelManager:
             return None, diag
         start = time.monotonic()
         try:
-            r = requests.get(url, timeout=(10, 90), allow_redirects=True,
+            r = _http_get(url, timeout=(10, 90), allow_redirects=True,
                              headers={"User-Agent": "VulnPrioritizer/0.2.0"})
             diag["http_status"] = r.status_code
             diag["final_url"] = r.url

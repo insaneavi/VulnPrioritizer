@@ -4,17 +4,19 @@ from services.threat_intel import ThreatIntelManager
 from services.release_notes import RELEASES
 from services.time_utils import display_time
 from services.analysis_store import AnalysisStore
+from services.network_config import NetworkConfig
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.5.0"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
+network_config = NetworkConfig()
 
 @app.context_processor
 def inject_globals():
-    return {"app_version": APP_VERSION, "release_date": RELEASE_DATE, "releases": RELEASES, "display_time": display_time}
+    return {"app_version": APP_VERSION, "release_date": RELEASE_DATE, "releases": RELEASES, "display_time": display_time, "proxy": network_config.public(), "proxy_method": network_config.masked_proxy()}
 
 @app.get("/")
 def index():
@@ -104,6 +106,40 @@ def asset_investigation(analysis_id, asset_id):
         return redirect(url_for("dashboard", analysis_id=analysis_id))
     return render_template("asset_detail.html", analysis_id=analysis_id, asset=asset,
                            vulnerabilities=analysis["asset_cves"].get(asset_id, []))
+
+
+@app.post("/threat-intelligence/proxy")
+def save_proxy():
+    old=network_config.load()
+    network_config.save({"enabled":request.form.get("enabled")=="on","protocol":request.form.get("protocol","http"),"host":request.form.get("host","").strip(),"port":request.form.get("port","").strip(),"username":request.form.get("username","").strip(),"password":request.form.get("password","") or old.get("password","")})
+    flash("Proxy configuration saved."); return redirect(url_for("threat_intelligence"))
+
+@app.post("/threat-intelligence/proxy/test")
+def test_proxy():
+    import socket, requests as rq
+    c=network_config.load()
+    if not c["enabled"]: flash("Proxy is currently disabled."); return redirect(url_for("threat_intelligence"))
+    try:
+        socket.create_connection((c["host"],int(c["port"])),timeout=8).close()
+        r=rq.get("https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",proxies=network_config.proxies(),timeout=20)
+        flash(f"Proxy TCP/{c['port']}: SUCCESS | HTTPS through proxy: HTTP {r.status_code}")
+    except Exception as e: flash("Proxy test FAILED: "+str(e))
+    return redirect(url_for("threat_intelligence"))
+
+@app.post("/threat-intelligence/proxy/clear")
+def clear_proxy():
+    network_config.save({"enabled":False,"protocol":"http","host":"","port":"","username":"","password":""}); flash("Proxy configuration cleared."); return redirect(url_for("threat_intelligence"))
+
+@app.get("/analysis/<analysis_id>/priority/<category>")
+def priority_drilldown(analysis_id,category):
+    a=analysis_store.get(analysis_id)
+    if not a: flash("This analysis session is no longer available. Upload the Rapid7 report again."); return redirect(url_for("index"))
+    if category=="kev": title,ex,mode,rows="Known Exploited","CVEs currently listed in CISA KEV.","vulns",[v for v in a["vulnerabilities"] if v["kev"]]
+    elif category=="epss": title,ex,mode,rows="High EPSS","CVEs with EPSS probability of 10% or greater.","vulns",[v for v in a["vulnerabilities"] if v["epss_raw"]>=.10]
+    elif category=="kev-assets": title,ex,mode,rows="Assets with KEV","Assets containing at least one CISA KEV vulnerability.","assets",[x for x in a["assets_table"] if x["kev_cves"]>0]
+    elif category=="critical": title,ex,mode,rows="Critical Findings",f'{a["metrics"]["critical_findings"]:,} findings have CVSS v3 ≥ 9.0; results are grouped by unique CVE.',"vulns",[v for v in a["vulnerabilities"] if v["cvss_raw"] is not None and v["cvss_raw"]>=9]
+    else: return redirect(url_for("dashboard",analysis_id=analysis_id))
+    return render_template("priority_detail.html",analysis_id=analysis_id,title=title,explanation=ex,mode=mode,rows=rows)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8085)
