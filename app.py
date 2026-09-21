@@ -1,14 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from services.rapid7_parser import parse_rapid7_csv
 from services.threat_intel import ThreatIntelManager
 from services.release_notes import RELEASES
 from services.time_utils import display_time
 from services.analysis_store import AnalysisStore
 from services.network_config import NetworkConfig
+from services.reporting import build_report
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
@@ -140,6 +142,25 @@ def priority_drilldown(analysis_id,category):
     elif category=="critical": title,ex,mode,rows="Critical Findings",f'{a["metrics"]["critical_findings"]:,} findings have CVSS v3 ≥ 9.0; results are grouped by unique CVE.',"vulns",[v for v in a["vulnerabilities"] if v["cvss_raw"] is not None and v["cvss_raw"]>=9]
     else: return redirect(url_for("dashboard",analysis_id=analysis_id))
     return render_template("priority_detail.html",analysis_id=analysis_id,title=title,explanation=ex,mode=mode,rows=rows)
+
+
+@app.get("/analysis/<analysis_id>/reporting")
+def reporting(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    return render_template("reporting.html",analysis_id=analysis_id,**analysis)
+
+@app.get("/analysis/<analysis_id>/reporting/excel")
+def reporting_excel(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    report=build_report(analysis)
+    filename=f"VulnPrioritizer_Report_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
+    return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8085)

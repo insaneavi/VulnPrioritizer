@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<div class="heading"><div><small>THREAT-ENRICHED ANALYSIS</small><h1>Rapid7 vulnerability dashboard</h1></div><a class="button" href="/">Analyze another file</a></div>
+<div class="heading"><div><small>THREAT-ENRICHED ANALYSIS</small><h1>Rapid7 vulnerability dashboard</h1></div><div><a class="button secondary" href="{{url_for('reporting',analysis_id=analysis_id)}}">Reporting</a> <a class="button" href="/">Analyze another file</a></div></div>
 {% if not intel_status.epss_available or not intel_status.kev_available %}<div class="alert">One or more threat-intelligence catalogs are unavailable. Rapid7 analysis continues, but enrichment may be incomplete. <a href="/threat-intelligence">Review status</a>.</div>{% endif %}
 <section class="cards"><div><span>Findings</span><b>{{"{:,}".format(metrics.findings)}}</b></div><div><span>Assets</span><b>{{metrics.assets}}</b></div><div><span>Unique CVEs</span><b>{{"{:,}".format(metrics.cves)}}</b></div><div><span>CISA KEV</span><b>{{metrics.kev_cves}}</b></div><div><span>Assets with KEV</span><b>{{metrics.kev_assets}}</b></div><div><span>EPSS ≥10%</span><b>{{metrics.high_epss_cves}}</b></div></section>
 <div class="quality">Data quality · {{quality.missing_cve}} missing CVE · {{quality.missing_hostname}} missing hostname · {{quality.missing_cvss}} missing CVSS v3</div>

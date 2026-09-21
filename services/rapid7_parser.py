@@ -119,5 +119,8 @@ def parse_rapid7_csv(file_obj, intel):
         "missing_hostname":int((df.hostname=="").sum()),"missing_cvss":int(df.cvss_v3_score.isna().sum())},
       "intel_status":intel.get_status(),"vulnerabilities":vulns,"assets_table":assets,
       "cve_index":cve_index,"asset_index":asset_index,"cve_assets":cve_assets,
-      "asset_cves":asset_cves,"kev_details":kev_details
+      "asset_cves":asset_cves,"kev_details":kev_details,
+      # Normalized finding-level rows are retained only inside the temporary analysis
+      # session so Reporting can produce a Raw Rapid7 Data worksheet.
+      "raw_findings": df.where(pd.notna(df), None).to_dict(orient="records")
     }
