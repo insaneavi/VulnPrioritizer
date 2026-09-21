@@ -2,16 +2,17 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from services.rapid7_parser import parse_rapid7_csv
 from services.threat_intel import ThreatIntelManager
 from services.release_notes import RELEASES
+from services.time_utils import display_time
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.2.1"
+APP_VERSION = "0.3.0"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 
 @app.context_processor
 def inject_globals():
-    return {"app_version": APP_VERSION, "release_date": RELEASE_DATE, "releases": RELEASES}
+    return {"app_version": APP_VERSION, "release_date": RELEASE_DATE, "releases": RELEASES, "display_time": display_time}
 
 @app.get("/")
 def index():
@@ -29,6 +30,10 @@ def update_threat_intelligence():
     else:
         flash("Threat intelligence update completed with one or more failures. Last-known-good data was preserved.")
     return redirect(url_for("threat_intelligence"))
+
+@app.get("/information")
+def information():
+    return render_template("information.html")
 
 @app.get("/release-notes")
 def release_notes():

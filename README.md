@@ -2,9 +2,17 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.2.1
+## Current Release — v0.3.0
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
+
+### v0.3.0 highlights
+- Host/local timezone support and human-readable timestamps
+- New Information page explaining CVSS, EPSS, percentile and CISA KEV
+- End-to-end VulnPrioritizer workflow documentation
+- Data-handling/privacy and corporate network documentation
+- Dashboard intelligence tooltips
+- New Priority Review tab using transparent exploitation/severity signals
 
 ### v0.2.0 highlights
 - FIRST EPSS bulk dataset synchronization
@@ -47,6 +55,16 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.3.0 — 2026-09-21 — Usability & Intelligence Guidance
+- Added host/local timezone support and human-readable local timestamps.
+- Added an Information page explaining the VulnPrioritizer workflow.
+- Added educational guidance for CVSS, EPSS, EPSS percentile, and CISA KEV.
+- Added data-handling/privacy and corporate network documentation.
+- Added contextual dashboard tooltips.
+- Added a Priority Review tab using transparent KEV, EPSS, CVSS, and affected-asset signals.
+- Continued to avoid a proprietary organizational risk score until business/CMDB context is available.
+
 
 ## v0.2.1 — 2026-09-21 — Release Notes Hotfix
 - Fixed the Release Notes page 500 error caused by a Jinja dictionary key collision with the built-in `items()` method.

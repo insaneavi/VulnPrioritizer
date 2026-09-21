@@ -7,8 +7,11 @@ services:
       - "8085:8085"
     volumes:
       - vulnprioritizer_intel:/app/intel
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     environment:
       - INTEL_ROOT=/app/intel
+      - TZ=America/New_York
 
 volumes:
   vulnprioritizer_intel:

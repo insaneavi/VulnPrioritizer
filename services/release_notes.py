@@ -1,5 +1,20 @@
 RELEASES = [
     {
+        "version": "0.3.0",
+        "date": "2026-09-21",
+        "title": "Usability & Intelligence Guidance",
+        "items": [
+            "Added host/local timezone support and human-readable local timestamps.",
+            "Added an Information page explaining VulnPrioritizer's end-to-end workflow.",
+            "Added educational guidance for CVSS, EPSS, EPSS percentile, and CISA KEV.",
+            "Added data-handling and privacy documentation explaining that Rapid7 data remains local.",
+            "Added corporate network requirements for FIRST EPSS and CISA KEV.",
+            "Added contextual information tooltips to vulnerability intelligence columns.",
+            "Added a Priority Review tab using transparent KEV, EPSS, CVSS, and affected-asset signals.",
+            "Continued to avoid a proprietary organizational risk score until business/CMDB context is available."
+        ]
+    },
+    {
         "version": "0.2.1",
         "date": "2026-09-21",
         "title": "Release Notes Hotfix",

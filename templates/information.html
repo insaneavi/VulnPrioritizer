@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block title %}Information · VulnPrioritizer{% endblock %}{% block content %}
+<section class="hero smallhero"><small>HOW IT WORKS</small><h1>Understanding VulnPrioritizer</h1><p>VulnPrioritizer supplements traditional vulnerability severity with real-world exploitation intelligence so analysts can understand not only how severe a vulnerability is, but also whether exploitation is predicted or already known.</p></section>
+
+<section class="workflow panel">
+<h2>Analysis workflow</h2>
+<div class="flow"><div>Rapid7 Export</div><span>→</span><div>Identify CVEs & Assets</div><span>→</span><div>Local EPSS Match</div><span>→</span><div>Local CISA KEV Match</div><span>→</span><div>Prioritized Review</div></div>
+<p class="muted">The complete public EPSS and CISA KEV catalogs are downloaded separately. Your Rapid7 vulnerability report is matched against those datasets locally.</p>
+</section>
+
+<div class="infogrid">
+<section class="panel info-card"><div class="infoicon">CVSS</div><h2>How severe is it?</h2><p>The Common Vulnerability Scoring System describes the technical severity of a vulnerability, generally on a 0–10 scale. Higher scores indicate greater potential technical impact.</p><p class="muted">CVSS severity does not by itself tell you whether attackers are currently exploiting the vulnerability or how likely exploitation is.</p></section>
+<section class="panel info-card"><div class="infoicon">EPSS</div><h2>How likely is exploitation?</h2><p>The Exploit Prediction Scoring System (EPSS), maintained by FIRST, estimates the probability that a published CVE will be exploited in the wild during the next 30 days.</p><p><b>Example:</b> EPSS 72% indicates substantially stronger predicted exploitation activity than EPSS 0.1%.</p><p><b>Percentile</b> shows how a CVE's EPSS score ranks relative to other scored vulnerabilities.</p></section>
+<section class="panel info-card"><div class="infoicon">KEV</div><h2>Is exploitation already known?</h2><p>CISA's Known Exploited Vulnerabilities catalog identifies vulnerabilities for which there is evidence of exploitation in the wild.</p><p class="muted">VulnPrioritizer highlights KEV matches separately because known exploitation is a different signal from technical severity or predicted exploitation probability.</p></section>
+</div>
+
+<section class="panel comparison"><h2>Why combine the signals?</h2>
+<table><thead><tr><th>Signal</th><th>Question it helps answer</th><th>Example use</th></tr></thead><tbody>
+<tr><td><b>CVSS</b></td><td>How technically severe is the vulnerability?</td><td>Understand potential technical impact.</td></tr>
+<tr><td><b>EPSS</b></td><td>How likely is exploitation in the next 30 days?</td><td>Identify vulnerabilities with elevated exploitation probability.</td></tr>
+<tr><td><b>CISA KEV</b></td><td>Is exploitation already known?</td><td>Identify vulnerabilities with evidence of exploitation in the wild.</td></tr>
+</tbody></table></section>
+
+<section class="panel privacy"><h2>Data handling & privacy</h2><p><b>Rapid7 data remains local.</b> Uploaded Rapid7 CSV files are processed by VulnPrioritizer and are not transmitted to FIRST or CISA.</p><p>VulnPrioritizer downloads the complete public EPSS and CISA KEV datasets and performs CVE matching locally. The persistent Docker volume stores these public threat-intelligence datasets and update metadata; it does not intentionally store uploaded Rapid7 reports.</p></section>
+
+<section class="panel network"><h2>Network requirements</h2><div class="networkgrid"><div><b>FIRST EPSS</b><code>epss.empiricalsecurity.com</code><span>HTTPS / TCP 443</span><span>Bulk EPSS dataset</span></div><div><b>CISA KEV</b><code>www.cisa.gov</code><span>HTTPS / TCP 443</span><span>Bulk KEV JSON catalog</span></div></div><p class="muted">Use the Threat Intelligence page for live DNS, TCP, TLS and HTTP diagnostics.</p></section>
+{% endblock %}
