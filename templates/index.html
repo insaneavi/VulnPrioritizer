@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block content %}<section class="hero"><small>RAPID7 VULNERABILITY REVIEW</small><h1>Review vulnerability data without fighting the spreadsheet.</h1><p>Upload your finding-level Rapid7 CSV to create CVE and asset views.</p></section>
+<section class="panel"><form action="/analyze" method="post" enctype="multipart/form-data"><label class="drop"><input id="rapid7_file" type="file" name="rapid7_file" accept=".csv" required><b>Choose Rapid7 CSV</b><span id="filename">Finding-level SQL export</span></label><button>Analyze vulnerabilities</button></form>
+<p class="muted">Expected: asset_id, ip_address, hostname, nexpose_id, cve, title, date_published, severity_score, cvss_v3_score</p></section>{% endblock %}

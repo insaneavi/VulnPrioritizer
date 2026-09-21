@@ -1,0 +1,7 @@
+services:
+  vulnprioritizer:
+    build: .
+    container_name: vulnprioritizer
+    restart: unless-stopped
+    ports:
+      - "8085:8085"

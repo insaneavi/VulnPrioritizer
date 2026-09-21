@@ -1,0 +1,3 @@
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab,.tabpanel").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.target).classList.add("active")});
+document.querySelectorAll(".search").forEach(i=>i.oninput=()=>{let q=i.value.toLowerCase();document.querySelectorAll(`#${i.dataset.table} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?"":"none")});
+let f=document.getElementById("rapid7_file");if(f)f.onchange=()=>document.getElementById("filename").textContent=f.files[0]?.name||"Finding-level SQL export";
