@@ -6,6 +6,12 @@ uploads/
 temp/
 exports/
 data/
+intel/epss/*
+intel/cisa/*
+intel/metadata/*
+!intel/epss/.gitkeep
+!intel/cisa/.gitkeep
+!intel/metadata/.gitkeep
 *.csv
 *.xlsx
 *.xls

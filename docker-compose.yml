@@ -5,3 +5,11 @@ services:
     restart: unless-stopped
     ports:
       - "8085:8085"
+    volumes:
+      - vulnprioritizer_intel:/app/intel
+    environment:
+      - INTEL_ROOT=/app/intel
+
+volumes:
+  vulnprioritizer_intel:
+    name: vulnprioritizer_intel

@@ -1,3 +1,5 @@
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab,.tabpanel").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.target).classList.add("active")});
-document.querySelectorAll(".search").forEach(i=>i.oninput=()=>{let q=i.value.toLowerCase();document.querySelectorAll(`#${i.dataset.table} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?"":"none")});
+document.querySelectorAll(".search").forEach(i=>i.oninput=()=>applyRows(i));
+function applyRows(i){let q=i.value.toLowerCase();document.querySelectorAll(`#${i.dataset.table} tbody tr`).forEach(r=>{let text=r.innerText.toLowerCase().includes(q);let threat=true;if(i.dataset.table==="vt"){let k=document.getElementById("kevOnly"),e=document.getElementById("epssFilter");threat=(!k.checked||r.dataset.kev==="1")&&(parseFloat(r.dataset.epss||"0")>=parseFloat(e.value))}r.style.display=text&&threat?"":"none"})}
+function threat(){let i=document.querySelector('.search[data-table="vt"]');if(i)applyRows(i)}let k=document.getElementById("kevOnly"),e=document.getElementById("epssFilter");if(k)k.onchange=threat;if(e)e.onchange=threat;
 let f=document.getElementById("rapid7_file");if(f)f.onchange=()=>document.getElementById("filename").textContent=f.files[0]?.name||"Finding-level SQL export";
