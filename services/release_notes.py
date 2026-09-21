@@ -1,5 +1,16 @@
 RELEASES = [
     {
+        "version": "0.2.1",
+        "date": "2026-09-21",
+        "title": "Release Notes Hotfix",
+        "items": [
+            "Fixed the Release Notes page 500 error caused by a Jinja dictionary key collision with the built-in items() method.",
+            "Confirmed FIRST EPSS bulk synchronization and local cache operation.",
+            "Confirmed CISA KEV bulk synchronization and local cache operation.",
+            "No changes to Rapid7 parsing, threat-intelligence matching, or persistent volume behavior."
+        ]
+    },
+    {
         "version": "0.2.0",
         "date": "2026-09-21",
         "title": "Threat Intelligence",

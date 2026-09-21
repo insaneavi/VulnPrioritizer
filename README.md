@@ -2,7 +2,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.2.0
+## Current Release — v0.2.1
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -47,6 +47,13 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.2.1 — 2026-09-21 — Release Notes Hotfix
+- Fixed the Release Notes page 500 error caused by a Jinja dictionary key collision with the built-in `items()` method.
+- Confirmed FIRST EPSS bulk synchronization and local cache operation.
+- Confirmed CISA KEV bulk synchronization and local cache operation.
+- No changes to Rapid7 parsing, threat-intelligence matching, or persistent volume behavior.
+
 
 ## v0.2.0 — 2026-09-21 — Threat Intelligence
 - Added local FIRST EPSS bulk-dataset synchronization.

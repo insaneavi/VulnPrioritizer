@@ -5,7 +5,7 @@ from services.release_notes import RELEASES
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 
