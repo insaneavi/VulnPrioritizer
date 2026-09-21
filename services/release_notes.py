@@ -1,5 +1,17 @@
 RELEASES = [
     {
+        "version": "0.4.1",
+        "date": "2026-09-21",
+        "title": "Shared Investigation Session Hotfix",
+        "items": [
+            "Fixed CVE and Asset Investigation links incorrectly reporting that the analysis session was unavailable when Gunicorn routed requests to different workers.",
+            "Replaced per-process in-memory session storage with shared temporary container-filesystem session storage accessible by all Gunicorn workers.",
+            "Rapid7 analysis sessions remain non-persistent and are not stored in the vulnprioritizer_intel Docker volume.",
+            "Session files are written atomically and the temporary store retains only the most recent analysis sessions.",
+            "No changes were made to persistent FIRST EPSS or CISA KEV threat-intelligence storage."
+        ]
+    },
+    {
         "version": "0.4.0",
         "date": "2026-09-21",
         "title": "Investigation & Navigation",

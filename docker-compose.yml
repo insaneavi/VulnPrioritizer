@@ -12,6 +12,7 @@ services:
     environment:
       - INTEL_ROOT=/app/intel
       - TZ=America/New_York
+      - ANALYSIS_TMP_ROOT=/tmp/vulnprioritizer_sessions
 
 volumes:
   vulnprioritizer_intel:

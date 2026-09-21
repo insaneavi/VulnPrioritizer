@@ -2,9 +2,15 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.4.0
+## Current Release — v0.4.1
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
+
+### v0.4.1 highlights
+- Fixed investigation sessions across multiple Gunicorn workers
+- Shared temporary container-filesystem analysis storage
+- Rapid7 sessions remain non-persistent and outside the threat-intelligence volume
+- Atomic temporary-session writes and bounded session cleanup
 
 ### v0.4.0 highlights
 - Clickable CVE and asset investigation
@@ -64,6 +70,14 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.4.1 — 2026-09-21 — Shared Investigation Session Hotfix
+- Fixed CVE/Asset Investigation links losing the current analysis when Gunicorn routed requests to another worker.
+- Replaced worker-local memory sessions with shared temporary container-filesystem sessions.
+- Rapid7 analysis remains non-persistent and is not stored in `vulnprioritizer_intel`.
+- Added atomic session writes and cleanup of older temporary sessions.
+- FIRST EPSS and CISA KEV persistence is unchanged.
+
 
 ## v0.4.0 — 2026-09-21 — Investigation & Navigation
 - Added temporary in-memory analysis sessions for navigation without a Rapid7 database.

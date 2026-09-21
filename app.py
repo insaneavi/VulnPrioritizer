@@ -7,7 +7,7 @@ from services.analysis_store import AnalysisStore
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.4.1"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
