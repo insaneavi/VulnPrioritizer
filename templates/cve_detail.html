@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}{{vuln.cve}} · VulnPrioritizer{% endblock %}{% block content %}
+<div class="breadcrumbs"><a href="{{url_for('dashboard',analysis_id=analysis_id)}}">Dashboard</a><span>›</span><span>Vulnerability Overview</span><span>›</span><b>{{vuln.cve}}</b></div>
+<div class="detailhead"><div><small>CVE INVESTIGATION</small><h1>{{vuln.cve}}</h1><p>{{vuln.title}}</p></div><a class="button secondary" href="{{url_for('dashboard',analysis_id=analysis_id)}}">← Back to Dashboard</a></div>
+<section class="detailmetrics">
+<div><span>CISA KEV</span><b class="{{'dangertext' if vuln.kev else ''}}">{{'YES' if vuln.kev else 'No'}}</b></div>
+<div><span>EPSS</span><b>{{vuln.epss or '—'}}</b></div><div><span>EPSS Percentile</span><b>{{vuln.percentile or '—'}}</b></div>
+<div><span>CVSS v3</span><b>{{vuln.cvss or '—'}}</b></div><div><span>Affected Assets</span><b>{{vuln.affected_assets}}</b></div>
+<div><span>Published</span><b>{{vuln.published or '—'}}</b></div><div><span>Age</span><b>{{vuln.age_days}} days</b></div>
+<div><span>Rapid7 Vuln ID</span><b class="smallvalue">{{vuln.nexpose_id or '—'}}</b></div>
+</section>
+{% if vuln.kev %}<section class="panel kevdetail"><div class="sectiontitle"><h2>CISA KEV Details</h2><span class="kev">KNOWN EXPLOITED</span></div>
+<div class="detailgrid"><div><span>Vendor / Project</span><b>{{kev_detail.vendor or '—'}}</b></div><div><span>Product</span><b>{{kev_detail.product or '—'}}</b></div><div><span>Date Added</span><b>{{kev_detail.date_added or '—'}}</b></div><div><span>CISA Due Date</span><b>{{kev_detail.due_date or '—'}}</b></div><div><span>Known Ransomware Use</span><b>{{kev_detail.ransomware or '—'}}</b></div></div>
+{% if kev_detail.short_description %}<p>{{kev_detail.short_description}}</p>{% endif %}{% if kev_detail.required_action %}<div class="guidance"><b>CISA Required Action:</b> {{kev_detail.required_action}}</div>{% endif %}</section>{% endif %}
+<section class="contextbar"><div><span>Affected assets</span><b>{{vuln.affected_assets}}</b></div><div><span>Unique CVEs across those assets</span><b>{{context.related_unique_cves}}</b></div><div><span>Assets with other KEVs</span><b>{{context.assets_with_other_kev}}</b></div></section>
+<section class="panel"><div class="tableheading"><div><h2>Affected Assets</h2><p class="muted">Select an asset to continue the investigation.</p></div><input class="search" data-table="affected" placeholder="Search hostname, IP or asset ID"></div>
+<div class="table"><table id="affected"><thead><tr><th>Hostname</th><th>IP Address</th><th>Rapid7 Asset ID</th><th>Total Findings</th><th>Unique CVEs</th><th>Other KEVs</th><th>Max CVSS</th></tr></thead><tbody>
+{% for a in affected_assets %}<tr><td><a class="investigate" href="{{url_for('asset_investigation',analysis_id=analysis_id,asset_id=a.asset_id)}}"><b>{{a.hostname}}</b></a></td><td>{{a.ip_address}}</td><td><a class="investigate" href="{{url_for('asset_investigation',analysis_id=analysis_id,asset_id=a.asset_id)}}">{{a.asset_id}}</a></td><td>{{a.findings}}</td><td>{{a.unique_cves}}</td><td>{{a.kev_cves - (1 if vuln.kev else 0)}}</td><td>{{a.max_cvss}}</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}

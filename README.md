@@ -2,9 +2,18 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.3.0
+## Current Release — v0.4.0
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
+
+### v0.4.0 highlights
+- Clickable CVE and asset investigation
+- Dedicated CVE Investigation pages
+- Dedicated Asset Investigation pages
+- Bidirectional CVE → Asset → CVE navigation
+- CISA KEV investigation context
+- Temporary in-memory analysis sessions; no Rapid7 database
+- Breadcrumbs and investigation-table search
 
 ### v0.3.0 highlights
 - Host/local timezone support and human-readable timestamps
@@ -55,6 +64,16 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.4.0 — 2026-09-21 — Investigation & Navigation
+- Added temporary in-memory analysis sessions for navigation without a Rapid7 database.
+- Added clickable CVEs, assets, and hostnames.
+- Added CVE Investigation with EPSS, percentile, KEV, CVSS, affected assets, and Rapid7 context.
+- Added CISA KEV detail fields where available.
+- Added Asset Investigation with CVE, KEV, high-EPSS, critical-finding, and severity context.
+- Added CVE-to-Asset-to-CVE navigation, breadcrumbs, and searchable investigation tables.
+- Updated Information documentation for temporary analysis sessions.
+
 
 ## v0.3.0 — 2026-09-21 — Usability & Intelligence Guidance
 - Added host/local timezone support and human-readable local timestamps.

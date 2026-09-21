@@ -1,5 +1,21 @@
 RELEASES = [
     {
+        "version": "0.4.0",
+        "date": "2026-09-21",
+        "title": "Investigation & Navigation",
+        "items": [
+            "Added temporary in-memory analysis sessions to support investigation without creating a Rapid7 database.",
+            "Made CVEs clickable from the Vulnerability Overview.",
+            "Made assets and hostnames clickable from the Asset Overview.",
+            "Added dedicated CVE Investigation pages with CVSS, EPSS, percentile, KEV, publication age, Rapid7 ID, and affected assets.",
+            "Added CISA KEV vendor, product, date added, due date, ransomware-use, description, and required-action context where available.",
+            "Added dedicated Asset Investigation pages with finding counts, CVEs, KEVs, high-EPSS exposure, critical findings, and highest CVSS.",
+            "Added bidirectional CVE-to-Asset-to-CVE investigation navigation.",
+            "Added breadcrumbs, back navigation, search within investigation tables, and related exposure context.",
+            "Updated Information documentation to explain temporary analysis-session handling."
+        ]
+    },
+    {
         "version": "0.3.0",
         "date": "2026-09-21",
         "title": "Usability & Intelligence Guidance",

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}{{asset.hostname}} · VulnPrioritizer{% endblock %}{% block content %}
+<div class="breadcrumbs"><a href="{{url_for('dashboard',analysis_id=analysis_id)}}">Dashboard</a><span>›</span><span>Asset Overview</span><span>›</span><b>{{asset.hostname}}</b></div>
+<div class="detailhead"><div><small>ASSET INVESTIGATION</small><h1>{{asset.hostname}}</h1><p>{{asset.ip_address}} · Rapid7 Asset ID {{asset.asset_id}}</p></div><a class="button secondary" href="{{url_for('dashboard',analysis_id=analysis_id)}}">← Back to Dashboard</a></div>
+<section class="detailmetrics">
+<div><span>Total Findings</span><b>{{asset.findings}}</b></div><div><span>Unique CVEs</span><b>{{asset.unique_cves}}</b></div>
+<div><span>CISA KEVs</span><b class="{{'dangertext' if asset.kev_cves else ''}}">{{asset.kev_cves}}</b></div>
+<div><span>EPSS ≥ 10%</span><b>{{asset.high_epss_cves}}</b></div><div><span>CVSS ≥ 9 Findings</span><b>{{asset.critical_findings}}</b></div><div><span>Highest CVSS</span><b>{{asset.max_cvss}}</b></div>
+</section>
+<section class="panel"><div class="tableheading"><div><h2>Vulnerabilities affecting this asset</h2><p class="muted">Select a CVE to investigate its exposure across the environment.</p></div><input class="search" data-table="assetvulns" placeholder="Search CVE or title"></div>
+<div class="table"><table id="assetvulns"><thead><tr><th>CVE</th><th>Title</th><th>CVSS</th><th>EPSS</th><th>Percentile</th><th>KEV</th><th>Published</th><th>Environment Assets</th></tr></thead><tbody>
+{% for v in vulnerabilities %}<tr><td><a class="investigate" href="{{url_for('cve_investigation',analysis_id=analysis_id,cve=v.cve)}}"><b>{{v.cve}}</b></a></td><td>{{v.title}}</td><td>{{v.cvss}}</td><td>{{v.epss}}</td><td>{{v.percentile}}</td><td>{% if v.kev %}<span class="kev">KEV</span>{% else %}—{% endif %}</td><td>{{v.published}}</td><td>{{v.affected_assets}}</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}
