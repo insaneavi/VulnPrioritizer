@@ -12,7 +12,13 @@ def parse_rapid7_csv(file_obj, intel):
     if missing:
         raise ValueError("Missing expected Rapid7 columns: "+", ".join(missing))
 
-    for c in ["asset_id","ip_address","hostname","nexpose_id","cve","title"]:
+    text_columns=["asset_id","ip_address","hostname","nexpose_id","cve","title"]
+    optional_os=["operating_system","os_vendor","os_family","os_name","os_version","os_architecture"]
+    for c in optional_os:
+        if c not in df.columns:
+            df[c]=""
+        text_columns.append(c)
+    for c in text_columns:
         df[c]=df[c].fillna("").astype(str).str.strip()
     df["cve"]=df["cve"].str.upper()
     df["cvss_v3_score"]=pd.to_numeric(df["cvss_v3_score"],errors="coerce")
@@ -47,7 +53,13 @@ def parse_rapid7_csv(file_obj, intel):
         findings=("nexpose_id","size"),
         unique_cves=("cve",lambda s:s[s.str.startswith("CVE-")].nunique()),
         max_cvss=("cvss_v3_score","max"),
-        critical_findings=("cvss_v3_score",lambda s:int((s>=9).sum())))
+        critical_findings=("cvss_v3_score",lambda s:int((s>=9).sum())),
+        operating_system=("operating_system",lambda s:next((x for x in s if x),"")),
+        os_vendor=("os_vendor",lambda s:next((x for x in s if x),"")),
+        os_family=("os_family",lambda s:next((x for x in s if x),"")),
+        os_name=("os_name",lambda s:next((x for x in s if x),"")),
+        os_version=("os_version",lambda s:next((x for x in s if x),"")),
+        os_architecture=("os_architecture",lambda s:next((x for x in s if x),"")))
     asset["kev_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(kev_cves))].cve.nunique())
     asset["high_epss_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(high_epss))].cve.nunique())
     asset=asset.sort_values(["kev_cves","high_epss_cves","findings"],ascending=False)
@@ -74,7 +86,11 @@ def parse_rapid7_csv(file_obj, intel):
               "findings":int(r.findings),"unique_cves":int(r.unique_cves),
               "kev_cves":int(r.kev_cves),"high_epss_cves":int(r.high_epss_cves),
               "critical_findings":int(r.critical_findings),
-              "max_cvss":"" if pd.isna(r.max_cvss) else f"{r.max_cvss:.1f}"}
+              "max_cvss":"" if pd.isna(r.max_cvss) else f"{r.max_cvss:.1f}",
+              "operating_system":r.operating_system or "Unknown",
+              "os_vendor":r.os_vendor or "Unknown","os_family":r.os_family or "Unknown",
+              "os_name":r.os_name or "Unknown","os_version":r.os_version or "Unknown",
+              "os_architecture":r.os_architecture or "Unknown"}
         assets.append(item); asset_index[r.asset_id]=item
 
     # Cross-links: CVE -> affected assets

@@ -6,11 +6,12 @@ from services.time_utils import display_time
 from services.analysis_store import AnalysisStore
 from services.network_config import NetworkConfig
 from services.reporting import build_report
+from services.operations_reporting import build_operations_report
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.6.1"
 RELEASE_DATE = "2026-09-21"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
@@ -160,6 +161,17 @@ def reporting_excel(analysis_id):
         return redirect(url_for("index"))
     report=build_report(analysis)
     filename=f"VulnPrioritizer_Report_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
+    return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.get("/analysis/<analysis_id>/reporting/operations")
+def reporting_operations_excel(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    report,_=build_operations_report(analysis)
+    filename=f"VulnPrioritizer_Operations_Patching_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
     return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":

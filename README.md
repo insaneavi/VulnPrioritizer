@@ -2,7 +2,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.6.0
+## Current Release — v0.6.1
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -65,11 +65,24 @@ Expected columns:
 
 `asset_id`, `ip_address`, `hostname`, `nexpose_id`, `cve`, `title`, `date_published`, `severity_score`, `cvss_v3_score`
 
+Optional OS fields used by the Operations/Patching report:
+
+`operating_system`, `os_vendor`, `os_family`, `os_name`, `os_version`, `os_architecture`
+
 Rapid7 uploads are processed transiently and are not intentionally persisted by the application.
 
 ---
 
 # Release Notes
+
+## v0.6.1 — 2026-09-21 — Operations Patching Report
+- Added a separate downstream Operations/Patching workbook.
+- Added OS-aware Windows 10, Windows 11, Windows Server, generic Windows, and Microsoft Edge patch campaigns.
+- Every campaign includes its generation date/time, affected assets, findings, CVEs, KEV and high-EPSS context.
+- Added technical asset worksheets and consolidated Campaign Finding Data for Operations filtering/ticket creation.
+- Added optional Rapid7 OS fields while preserving compatibility with the original nine-column export.
+- Operations guidance requires approved patch/change processes and post-patch validation.
+
 
 ## v0.6.0 — 2026-09-21 — Reporting & Export
 - Added a Reporting page and generated Excel workbook with 10 purpose-built worksheets.
