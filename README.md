@@ -2,7 +2,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.6.1
+## Current Release — v0.6.2
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -74,6 +74,14 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 ---
 
 # Release Notes
+
+## v0.6.2 — 2026-09-22 — Transparent Review Prioritization
+- Added explained default prioritization to Vulnerability Overview and Asset Overview.
+- Vulnerabilities: KEV → EPSS → CVSS → affected assets → age/context.
+- Assets: KEV count → High EPSS count → Critical CVSS findings → maximum CVSS → overall exposure.
+- Added visible Priority Signals so users can understand why records appear near the top.
+- Added the same methodology to the Security Excel report; no proprietary risk score is introduced.
+
 
 ## v0.6.1 — 2026-09-21 — Operations Patching Report
 - Added a separate downstream Operations/Patching workbook.

@@ -2,6 +2,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.worksheet.table import Table, TableStyleInfo
@@ -86,15 +87,17 @@ def build_report(analysis):
 
     pri=[v for v in analysis["vulnerabilities"] if _priority_reason(v)]
     _write_vulns(wb.create_sheet("Priority Review"),pri)
-    _write_vulns(wb.create_sheet("Vulnerability Overview"),analysis["vulnerabilities"])
+    vws=wb.create_sheet("Vulnerability Overview"); _write_vulns(vws,analysis["vulnerabilities"])
+    vws["A1"].comment=Comment("Default review order: CISA KEV first, then higher EPSS, higher CVSS, affected asset count, and vulnerability age as a final contextual tie-breaker. A KEV or high-EPSS CVE may rank above a CVSS 9+ CVE. This is not a proprietary risk score.","VulnPrioritizer")
 
-    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
-    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
+    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Priority Signals","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
+    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("priority_signals"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
     _style_header(ws); _finish(ws); _table(ws,"TAssetOverview")
+    ws["A1"].comment=Comment("Default review order: CISA KEV CVE count, High EPSS CVE count (>=10%), Critical CVSS findings (>=9.0), maximum CVSS, then overall CVE/finding exposure. CMDB business context is not yet included. This is not a proprietary risk score.","VulnPrioritizer")
     for r in range(2,ws.max_row+1):
-        if (ws.cell(r,6).value or 0)>0: ws.cell(r,6).fill=PatternFill("solid",fgColor=RED); ws.cell(r,6).font=Font(color=RED_DARK,bold=True)
-        if (ws.cell(r,7).value or 0)>0: ws.cell(r,7).fill=PatternFill("solid",fgColor=ORANGE)
-        if (ws.cell(r,8).value or 0)>0: ws.cell(r,8).fill=PatternFill("solid",fgColor=RED)
+        if (ws.cell(r,7).value or 0)>0: ws.cell(r,7).fill=PatternFill("solid",fgColor=RED); ws.cell(r,7).font=Font(color=RED_DARK,bold=True)
+        if (ws.cell(r,8).value or 0)>0: ws.cell(r,8).fill=PatternFill("solid",fgColor=ORANGE)
+        if (ws.cell(r,9).value or 0)>0: ws.cell(r,9).fill=PatternFill("solid",fgColor=RED)
 
     kevrows=[v for v in analysis["vulnerabilities"] if v.get("kev")]
     ws=wb.create_sheet("CISA KEV"); kh=["CVE","Title","Vendor","Product","CVSS","EPSS","Affected Assets","Date Added to KEV","CISA Due Date","Known Ransomware Campaign Use","Required Action"]; ws.append(kh)
@@ -112,7 +115,7 @@ def build_report(analysis):
     for r in range(2,ws.max_row+1):
         if (ws.cell(r,2).value or 0)>0: ws.cell(r,2).fill=PatternFill("solid",fgColor=YELLOW); ws.cell(r,2).font=Font(bold=True)
 
-    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Uses CISA KEV, EPSS, CVSS and affected-asset exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
+    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Vulnerabilities: KEV -> EPSS -> CVSS -> affected assets -> age. Assets: KEV count -> High EPSS count -> Critical CVSS findings -> max CVSS -> overall exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
     for x in info: ws.append(x)
     _style_header(ws); _finish(ws); _table(ws,"TReportInfo")
 

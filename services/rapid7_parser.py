@@ -41,7 +41,7 @@ def parse_rapid7_csv(file_obj, intel):
     vuln["epss"]=vuln["cve"].map(lambda c:epss.get(c,{}).get("epss"))
     vuln["percentile"]=vuln["cve"].map(lambda c:epss.get(c,{}).get("percentile"))
     vuln["kev"]=vuln["cve"].isin(kev)
-    vuln=vuln.sort_values(["kev","epss","affected_assets","cvss_v3_score"],ascending=[False,False,False,False],na_position="last")
+    vuln=vuln.sort_values(["kev","epss","cvss_v3_score","affected_assets","age_days"],ascending=[False,False,False,False,False],na_position="last")
 
     kev_cves=set(vuln.loc[vuln.kev,"cve"])
     high_epss=set(vuln.loc[vuln.epss.fillna(0)>=.10,"cve"])
@@ -62,7 +62,7 @@ def parse_rapid7_csv(file_obj, intel):
         os_architecture=("os_architecture",lambda s:next((x for x in s if x),"")))
     asset["kev_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(kev_cves))].cve.nunique())
     asset["high_epss_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(high_epss))].cve.nunique())
-    asset=asset.sort_values(["kev_cves","high_epss_cves","findings"],ascending=False)
+    asset=asset.sort_values(["kev_cves","high_epss_cves","critical_findings","max_cvss","unique_cves","findings"],ascending=[False,False,False,False,False,False],na_position="last")
 
     vulns=[]
     cve_index={}
@@ -77,6 +77,11 @@ def parse_rapid7_csv(file_obj, intel):
               "kev":bool(r.kev),"affected_assets":int(r.affected_assets),"findings":int(r.findings),
               "published":_fmt_date(r.date_published),
               "age_days":"" if pd.isna(r.age_days) else int(r.age_days)}
+        signals=[]
+        if item["kev"]: signals.append("Known Exploited (KEV)")
+        if item["epss_raw"]>=.10: signals.append("High EPSS")
+        if (item["cvss_raw"] or 0)>=9: signals.append("Critical CVSS")
+        item["priority_signals"]=" · ".join(signals) if signals else "CVSS / exposure context"
         vulns.append(item); cve_index[r.cve]=item
 
     assets=[]
@@ -91,6 +96,11 @@ def parse_rapid7_csv(file_obj, intel):
               "os_vendor":r.os_vendor or "Unknown","os_family":r.os_family or "Unknown",
               "os_name":r.os_name or "Unknown","os_version":r.os_version or "Unknown",
               "os_architecture":r.os_architecture or "Unknown"}
+        signals=[]
+        if item["kev_cves"]: signals.append(f'KEV: {item["kev_cves"]}')
+        if item["high_epss_cves"]: signals.append(f'High EPSS: {item["high_epss_cves"]}')
+        if item["critical_findings"]: signals.append(f'Critical: {item["critical_findings"]}')
+        item["priority_signals"]=" · ".join(signals) if signals else "Exposure / CVSS context"
         assets.append(item); asset_index[r.asset_id]=item
 
     # Cross-links: CVE -> affected assets
@@ -100,7 +110,7 @@ def parse_rapid7_csv(file_obj, intel):
         for aid in group["asset_id"].drop_duplicates():
             if aid in asset_index:
                 rows.append(asset_index[aid])
-        cve_assets[cve]=sorted(rows,key=lambda x:(x["kev_cves"],x["findings"]),reverse=True)
+        cve_assets[cve]=sorted(rows,key=lambda x:(x["kev_cves"],x["high_epss_cves"],x["critical_findings"],float(x["max_cvss"] or 0),x["unique_cves"],x["findings"]),reverse=True)
 
     # Cross-links: asset -> vulnerabilities
     asset_cves={}
