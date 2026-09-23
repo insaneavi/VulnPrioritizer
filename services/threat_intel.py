@@ -53,13 +53,34 @@ class ThreatIntelManager:
         parsed = urlparse(url)
         host = parsed.hostname
         port = parsed.port or 443
+        proxy_cfg = NetworkConfig()
+        proxies = proxy_cfg.proxies()
         result = {
             "timestamp": self._now(), "url": url, "host": host, "port": port,
-            "dns": "NOT ATTEMPTED", "resolved_ips": [], "tcp": "NOT ATTEMPTED",
-            "tls": "NOT ATTEMPTED", "http_status": None, "final_url": None,
-            "redirects": 0, "download_bytes": 0, "duration_seconds": None, "error": None
+            "connection_method": proxy_cfg.masked_proxy(),
+            "proxy_enabled": bool(proxies),
+            "dns": "PROXY HANDLES DESTINATION" if proxies else "NOT ATTEMPTED",
+            "resolved_ips": [], "tcp": "NOT ATTEMPTED", "tls": "NOT ATTEMPTED",
+            "http_status": None, "final_url": None, "redirects": 0,
+            "download_bytes": 0, "duration_seconds": None, "error": None
         }
         start = time.monotonic()
+
+        # With an HTTP/HTTPS proxy, do not require the container to resolve or
+        # connect directly to the destination. The proxy handles the CONNECT
+        # tunnel and destination DNS. This mirrors the proven requests behavior.
+        if proxies:
+            c = proxy_cfg.load()
+            try:
+                with socket.create_connection((c["host"], int(c["port"])), timeout=10):
+                    result["tcp"] = "PROXY SUCCESS"
+                result["tls"] = "VIA PROXY REQUEST"
+            except Exception as exc:
+                result["tcp"] = "PROXY FAILED"
+                result["error"] = f"PROXY TCP: {type(exc).__name__}: {exc}"
+            result["duration_seconds"] = round(time.monotonic()-start, 3)
+            return result
+
         try:
             infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
             result["resolved_ips"] = sorted({x[4][0] for x in infos})
@@ -69,7 +90,6 @@ class ThreatIntelManager:
             result["error"] = f"DNS: {type(exc).__name__}: {exc}"
             result["duration_seconds"] = round(time.monotonic()-start, 3)
             return result
-
         try:
             with socket.create_connection((host, port), timeout=10):
                 result["tcp"] = "SUCCESS"
@@ -78,7 +98,6 @@ class ThreatIntelManager:
             result["error"] = f"TCP: {type(exc).__name__}: {exc}"
             result["duration_seconds"] = round(time.monotonic()-start, 3)
             return result
-
         try:
             context = ssl.create_default_context()
             with socket.create_connection((host, port), timeout=10) as raw:
@@ -87,25 +106,26 @@ class ThreatIntelManager:
         except Exception as exc:
             result["tls"] = "FAILED"
             result["error"] = f"TLS: {type(exc).__name__}: {exc}"
-            result["duration_seconds"] = round(time.monotonic()-start, 3)
-            return result
-
         result["duration_seconds"] = round(time.monotonic()-start, 3)
         return result
 
     def _download(self, url):
         diag = self._network_diagnostics(url)
-        if diag["dns"] != "SUCCESS" or diag["tcp"] != "SUCCESS" or diag["tls"] != "SUCCESS":
+        if diag.get("error"):
+            return None, diag
+        if not diag.get("proxy_enabled") and (diag["dns"] != "SUCCESS" or diag["tcp"] != "SUCCESS" or diag["tls"] != "SUCCESS"):
             return None, diag
         start = time.monotonic()
         try:
             r = _http_get(url, timeout=(10, 90), allow_redirects=True,
-                             headers={"User-Agent": "VulnPrioritizer/0.2.0"})
+                          headers={"User-Agent": "VulnPrioritizer/0.6.4"})
             diag["http_status"] = r.status_code
             diag["final_url"] = r.url
             diag["redirects"] = len(r.history)
             diag["download_bytes"] = len(r.content)
             diag["duration_seconds"] = round(time.monotonic()-start, 3)
+            if diag.get("proxy_enabled"):
+                diag["tls"] = "SUCCESS VIA PROXY" if r.status_code else diag["tls"]
             r.raise_for_status()
             return r.content, diag
         except Exception as exc:

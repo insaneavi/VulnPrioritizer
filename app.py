@@ -11,7 +11,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.6.3"
+APP_VERSION = "0.6.4"
 RELEASE_DATE = "2026-09-23"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
@@ -31,11 +31,21 @@ def threat_intelligence():
 
 @app.post("/threat-intelligence/update")
 def update_threat_intelligence():
-    result = intel.update_all()
-    if result["success"]:
-        flash("Threat intelligence update completed.")
+    source = request.form.get("source", "all")
+    if source == "epss":
+        ok = intel.update_epss()
+        flash("FIRST EPSS update completed successfully." if ok else "FIRST EPSS update failed. Last-known-good EPSS data was preserved.")
+    elif source == "kev":
+        ok = intel.update_kev()
+        flash("CISA KEV update completed successfully." if ok else "CISA KEV update failed. Last-known-good KEV data was preserved.")
     else:
-        flash("Threat intelligence update completed with one or more failures. Last-known-good data was preserved.")
+        result = intel.update_all()
+        if result["success"]:
+            flash("All threat intelligence sources updated successfully.")
+        else:
+            succeeded = [name for name in ("epss", "kev") if result.get(name)]
+            failed = [name for name in ("epss", "kev") if not result.get(name)]
+            flash(f"Threat intelligence update completed. Successful: {', '.join(succeeded) or 'none'}. Failed: {', '.join(failed) or 'none'}. Last-known-good data was preserved for failed sources.")
     return redirect(url_for("threat_intelligence"))
 
 @app.get("/information")
@@ -124,8 +134,8 @@ def test_proxy():
     if not c["enabled"]: flash("Proxy is currently disabled."); return redirect(url_for("threat_intelligence"))
     try:
         socket.create_connection((c["host"],int(c["port"])),timeout=8).close()
-        r=rq.get("https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",proxies=network_config.proxies(),timeout=20)
-        flash(f"Proxy TCP/{c['port']}: SUCCESS | HTTPS through proxy: HTTP {r.status_code}")
+        r=rq.get("https://epss.empiricalsecurity.com/epss_scores-current.csv.gz",proxies=network_config.proxies(),timeout=30,stream=True)
+        flash(f"Proxy {network_config.masked_proxy()}: TCP SUCCESS | EPSS HTTPS through proxy: HTTP {r.status_code}")
     except Exception as e: flash("Proxy test FAILED: "+str(e))
     return redirect(url_for("threat_intelligence"))
 
