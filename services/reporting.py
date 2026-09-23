@@ -73,7 +73,7 @@ def build_report(analysis):
     ws=wb.create_sheet("Executive Summary")
     ws.merge_cells("A1:F1"); ws["A1"]="Vulnerability Prioritization Report"; ws["A1"].fill=PatternFill("solid",fgColor=NAVY); ws["A1"].font=Font(color=WHITE,bold=True,size=18); ws["A1"].alignment=Alignment(vertical="center"); ws.row_dimensions[1].height=34
     ws["A3"]="Generated"; ws["B3"]=datetime.now().astimezone().strftime("%Y-%m-%d %I:%M %p %Z")
-    sections=[("ENVIRONMENT",[("Assets Analyzed",m["assets"]),("Vulnerability Findings",m["findings"]),("Unique CVEs",m["cves"])]),("THREAT EXPOSURE",[("CISA KEV CVEs",m["kev_cves"]),("Assets with KEV",m["kev_assets"]),("High EPSS CVEs (≥10%)",m["high_epss_cves"]),("Critical Findings (CVSS ≥9)",m["critical_findings"])]),("DATA QUALITY",[("Missing CVE",q["missing_cve"]),("Missing Hostname",q["missing_hostname"]),("Missing CVSS v3",q["missing_cvss"])])]
+    sections=[("ENVIRONMENT",[("Assets Analyzed",m["assets"]),("Vulnerability Findings",m["findings"]),("Unique CVEs",m["cves"])]),("THREAT EXPOSURE",[("CISA KEV CVEs",m["kev_cves"]),("Assets with KEV",m["kev_assets"]),("High EPSS CVEs (≥10%)",m["high_epss_cves"]),("Critical Findings (CVSS ≥9)",m["critical_findings"])]),("SCAN FRESHNESS",[("Current (<3 days)",m["scan_current"]),("Aging (3–10 days)",m["scan_aging"]),("Stale (>10 days)",m["scan_stale"]),("Unknown",m["scan_unknown"])]),("DATA QUALITY",[("Missing CVE",q["missing_cve"]),("Missing Hostname",q["missing_hostname"]),("Missing CVSS v3",q["missing_cvss"]),("Missing Scan Date",q["missing_scan_date"])])]
     row=5
     for title,items in sections:
         ws.merge_cells(start_row=row,start_column=1,end_row=row,end_column=3); c=ws.cell(row,1,title); c.fill=PatternFill("solid",fgColor=BLUE); c.font=Font(color=WHITE,bold=True); row+=1
@@ -90,14 +90,18 @@ def build_report(analysis):
     vws=wb.create_sheet("Vulnerability Overview"); _write_vulns(vws,analysis["vulnerabilities"])
     vws["A1"].comment=Comment("Default review order: CISA KEV first, then higher EPSS, higher CVSS, affected asset count, and vulnerability age as a final contextual tie-breaker. A KEV or high-EPSS CVE may rank above a CVSS 9+ CVE. This is not a proprietary risk score.","VulnPrioritizer")
 
-    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Priority Signals","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
-    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("priority_signals"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
+    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Last Scan","Scan Age (Days)","Scan Status","Priority Signals","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
+    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("last_scan_timestamp"),a.get("scan_age_days"),a.get("scan_status"),a.get("priority_signals"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
     _style_header(ws); _finish(ws); _table(ws,"TAssetOverview")
     ws["A1"].comment=Comment("Default review order: CISA KEV CVE count, High EPSS CVE count (>=10%), Critical CVSS findings (>=9.0), maximum CVSS, then overall CVE/finding exposure. CMDB business context is not yet included. This is not a proprietary risk score.","VulnPrioritizer")
     for r in range(2,ws.max_row+1):
-        if (ws.cell(r,7).value or 0)>0: ws.cell(r,7).fill=PatternFill("solid",fgColor=RED); ws.cell(r,7).font=Font(color=RED_DARK,bold=True)
-        if (ws.cell(r,8).value or 0)>0: ws.cell(r,8).fill=PatternFill("solid",fgColor=ORANGE)
-        if (ws.cell(r,9).value or 0)>0: ws.cell(r,9).fill=PatternFill("solid",fgColor=RED)
+        scan_state=ws.cell(r,6).value
+        if scan_state=="Stale": ws.cell(r,6).fill=PatternFill("solid",fgColor=RED); ws.cell(r,6).font=Font(color=RED_DARK,bold=True)
+        elif scan_state=="Aging": ws.cell(r,6).fill=PatternFill("solid",fgColor=YELLOW)
+        elif scan_state=="Current": ws.cell(r,6).fill=PatternFill("solid",fgColor=GREEN)
+        if (ws.cell(r,10).value or 0)>0: ws.cell(r,10).fill=PatternFill("solid",fgColor=RED); ws.cell(r,10).font=Font(color=RED_DARK,bold=True)
+        if (ws.cell(r,11).value or 0)>0: ws.cell(r,11).fill=PatternFill("solid",fgColor=ORANGE)
+        if (ws.cell(r,12).value or 0)>0: ws.cell(r,12).fill=PatternFill("solid",fgColor=RED)
 
     kevrows=[v for v in analysis["vulnerabilities"] if v.get("kev")]
     ws=wb.create_sheet("CISA KEV"); kh=["CVE","Title","Vendor","Product","CVSS","EPSS","Affected Assets","Date Added to KEV","CISA Due Date","Known Ransomware Campaign Use","Required Action"]; ws.append(kh)
@@ -109,18 +113,18 @@ def build_report(analysis):
     _write_vulns(wb.create_sheet("High EPSS"),[v for v in analysis["vulnerabilities"] if (v.get("epss_raw") or 0)>=.10])
     _write_vulns(wb.create_sheet("Critical CVSS"),[v for v in analysis["vulnerabilities"] if (v.get("cvss_raw") or 0)>=9])
 
-    ws=wb.create_sheet("Data Quality"); ws.append(["Check","Count","Review Guidance"]); dq=[("Missing CVE",q["missing_cve"],"Cannot match to EPSS or CISA KEV without a CVE."),("Missing Hostname",q["missing_hostname"],"Review asset identification; Asset ID/IP may still be available."),("Missing CVSS v3",q["missing_cvss"],"Technical severity cannot be color-coded using CVSS v3.")]
+    ws=wb.create_sheet("Data Quality"); ws.append(["Check","Count","Review Guidance"]); dq=[("Missing CVE",q["missing_cve"],"Cannot match to EPSS or CISA KEV without a CVE."),("Missing Hostname",q["missing_hostname"],"Review asset identification; Asset ID/IP may still be available."),("Missing CVSS v3",q["missing_cvss"],"Technical severity cannot be color-coded using CVSS v3."),("Missing Scan Date",q["missing_scan_date"],"Asset scan freshness cannot be determined.")]
     for x in dq: ws.append(x)
     _style_header(ws); _finish(ws); _table(ws,"TDataQuality")
     for r in range(2,ws.max_row+1):
         if (ws.cell(r,2).value or 0)>0: ws.cell(r,2).fill=PatternFill("solid",fgColor=YELLOW); ws.cell(r,2).font=Font(bold=True)
 
-    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Vulnerabilities: KEV -> EPSS -> CVSS -> affected assets -> age. Assets: KEV count -> High EPSS count -> Critical CVSS findings -> max CVSS -> overall exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
+    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Vulnerabilities: KEV -> EPSS -> CVSS -> affected assets -> age. Assets: KEV count -> High EPSS count -> Critical CVSS findings -> max CVSS -> overall exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Scan freshness","Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date. Freshness is a data-confidence indicator and does not change priority ranking."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
     for x in info: ws.append(x)
     _style_header(ws); _finish(ws); _table(ws,"TReportInfo")
 
     ws=wb.create_sheet("Raw Rapid7 Data"); raw=analysis.get("raw_findings",[])
-    rawheaders=["asset_id","ip_address","hostname","nexpose_id","cve","title","date_published","severity_score","cvss_v3_score"]
+    rawheaders=["asset_id","ip_address","hostname","last_scan_date","nexpose_id","cve","title","date_published","severity_score","cvss_v3_score"]
     ws.append(rawheaders)
     for x in raw: ws.append([x.get(h) for h in rawheaders])
     _style_header(ws); _finish(ws); _table(ws,"TRawRapid7")

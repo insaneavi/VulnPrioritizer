@@ -24,6 +24,11 @@ def parse_rapid7_csv(file_obj, intel):
     df["cvss_v3_score"]=pd.to_numeric(df["cvss_v3_score"],errors="coerce")
     df["severity_score"]=pd.to_numeric(df["severity_score"],errors="coerce")
     df["date_published"]=pd.to_datetime(df["date_published"],errors="coerce")
+    scan_source = "last_scan_date" if "last_scan_date" in df.columns else ("last_scan_data" if "last_scan_data" in df.columns else None)
+    if scan_source:
+        df["last_scan_date"] = pd.to_datetime(df[scan_source], errors="coerce")
+    else:
+        df["last_scan_date"] = pd.NaT
 
     epss=intel.load_epss()
     kev=intel.load_kev()
@@ -59,7 +64,20 @@ def parse_rapid7_csv(file_obj, intel):
         os_family=("os_family",lambda s:next((x for x in s if x),"")),
         os_name=("os_name",lambda s:next((x for x in s if x),"")),
         os_version=("os_version",lambda s:next((x for x in s if x),"")),
-        os_architecture=("os_architecture",lambda s:next((x for x in s if x),"")))
+        os_architecture=("os_architecture",lambda s:next((x for x in s if x),"")),
+        last_scan_date=("last_scan_date","max"))
+    now = pd.Timestamp.now()
+    def scan_age_days(v):
+        if pd.isna(v): return None
+        return max(0, int((now - v).total_seconds() // 86400))
+    def scan_status(days):
+        if days is None: return "Unknown"
+        if days < 3: return "Current"
+        if days <= 10: return "Aging"
+        return "Stale"
+    asset["scan_age_days"] = asset["last_scan_date"].map(scan_age_days)
+    asset["scan_status"] = asset["scan_age_days"].map(scan_status)
+
     asset["kev_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(kev_cves))].cve.nunique())
     asset["high_epss_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(high_epss))].cve.nunique())
     asset=asset.sort_values(["kev_cves","high_epss_cves","critical_findings","max_cvss","unique_cves","findings"],ascending=[False,False,False,False,False,False],na_position="last")
@@ -95,7 +113,11 @@ def parse_rapid7_csv(file_obj, intel):
               "operating_system":r.operating_system or "Unknown",
               "os_vendor":r.os_vendor or "Unknown","os_family":r.os_family or "Unknown",
               "os_name":r.os_name or "Unknown","os_version":r.os_version or "Unknown",
-              "os_architecture":r.os_architecture or "Unknown"}
+              "os_architecture":r.os_architecture or "Unknown",
+              "last_scan_date":_fmt_date(r.last_scan_date),
+              "last_scan_timestamp":"" if pd.isna(r.last_scan_date) else r.last_scan_date.strftime("%Y-%m-%d %H:%M:%S"),
+              "scan_age_days":None if pd.isna(r.scan_age_days) else int(r.scan_age_days),
+              "scan_status":r.scan_status}
         signals=[]
         if item["kev_cves"]: signals.append(f'KEV: {item["kev_cves"]}')
         if item["high_epss_cves"]: signals.append(f'High EPSS: {item["high_epss_cves"]}')
@@ -140,9 +162,14 @@ def parse_rapid7_csv(file_obj, intel):
         "cves":valid.cve.nunique(),"kev_cves":int(vuln.kev.sum()),
         "kev_assets":df[df.cve.isin(kev_cves)].asset_id.nunique(),
         "high_epss_cves":int((vuln.epss.fillna(0)>=.10).sum()),
-        "critical_findings":int((df.cvss_v3_score>=9).sum())},
+        "critical_findings":int((df.cvss_v3_score>=9).sum()),
+        "scan_current":int((asset.scan_status=="Current").sum()),
+        "scan_aging":int((asset.scan_status=="Aging").sum()),
+        "scan_stale":int((asset.scan_status=="Stale").sum()),
+        "scan_unknown":int((asset.scan_status=="Unknown").sum())},
       "quality":{"missing_cve":int((~df.cve.str.startswith("CVE-")).sum()),
-        "missing_hostname":int((df.hostname=="").sum()),"missing_cvss":int(df.cvss_v3_score.isna().sum())},
+        "missing_hostname":int((df.hostname=="").sum()),"missing_cvss":int(df.cvss_v3_score.isna().sum()),
+        "missing_scan_date":int((asset.scan_status=="Unknown").sum())},
       "intel_status":intel.get_status(),"vulnerabilities":vulns,"assets_table":assets,
       "cve_index":cve_index,"asset_index":asset_index,"cve_assets":cve_assets,
       "asset_cves":asset_cves,"kev_details":kev_details,

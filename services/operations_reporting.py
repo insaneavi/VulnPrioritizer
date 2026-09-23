@@ -82,6 +82,9 @@ def _make_campaign(name,category,action,rows,asset_index,kev,epss):
             "asset_id":aid,"hostname":a.get("hostname") or next((str(x.get("hostname") or "") for x in ar if x.get("hostname")),"—"),
             "ip_address":a.get("ip_address") or next((str(x.get("ip_address") or "") for x in ar if x.get("ip_address")),"—"),
             "operating_system":a.get("operating_system") or next((str(x.get("operating_system") or "") for x in ar if x.get("operating_system")),"Unknown"),
+            "last_scan_date":a.get("last_scan_timestamp") or "Unknown",
+            "scan_age_days":a.get("scan_age_days"),
+            "scan_status":a.get("scan_status") or "Unknown",
             "findings":len(ar),"unique_cves":len(acves),
             "kev_cves":sum(1 for c in acves if kev.get(c)),
             "high_epss_cves":sum(1 for c in acves if epss.get(c,0)>=.10),
@@ -117,24 +120,28 @@ def _table(ws,start,end,name):
     ws.add_table(t)
 
 def _campaign_sheet(ws,c,index):
-    ws.merge_cells("A1:I1"); ws["A1"]="PATCH CAMPAIGN — "+c["name"]; ws["A1"].fill=PatternFill("solid",fgColor=NAVY); ws["A1"].font=Font(color=WHITE,bold=True,size=16); ws.row_dimensions[1].height=32
+    ws.merge_cells("A1:L1"); ws["A1"]="PATCH CAMPAIGN — "+c["name"]; ws["A1"].fill=PatternFill("solid",fgColor=NAVY); ws["A1"].font=Font(color=WHITE,bold=True,size=16); ws.row_dimensions[1].height=32
     ws["A3"]="Generated"; ws["B3"]=_generated()
     metrics=[("Assets Requiring Attention",c["asset_count"]),("Vulnerability Findings",c["findings"]),("Unique CVEs",c["unique_cves"]),("CISA KEV CVEs",c["kev_cves"]),("High EPSS CVEs (≥10%)",c["high_epss_cves"])]
     r=5
     for k,v in metrics: ws.cell(r,1,k).font=Font(bold=True); ws.cell(r,2,v); r+=1
     ws.cell(r+1,1,"Recommended Action").font=Font(bold=True,color=WHITE); ws.cell(r+1,1).fill=PatternFill("solid",fgColor=BLUE)
-    ws.merge_cells(start_row=r+2,start_column=1,end_row=r+3,end_column=9); ws.cell(r+2,1,c["action"]); ws.cell(r+2,1).alignment=Alignment(wrap_text=True,vertical="top")
-    h=r+5; headers=["Hostname","IP Address","Asset ID","Operating System","Findings Addressed","Unique CVEs","CISA KEVs","High EPSS CVEs","Critical Findings"]; 
+    ws.merge_cells(start_row=r+2,start_column=1,end_row=r+3,end_column=12); ws.cell(r+2,1,c["action"]); ws.cell(r+2,1).alignment=Alignment(wrap_text=True,vertical="top")
+    h=r+5; headers=["Hostname","IP Address","Asset ID","Operating System","Last Scan","Scan Age (Days)","Scan Status","Findings Addressed","Unique CVEs","CISA KEVs","High EPSS CVEs","Critical Findings"]; 
     for i,x in enumerate(headers,1): ws.cell(h,i,x)
     _header(ws,h)
     for a in c["assets"]:
-        ws.append([a["hostname"],a["ip_address"],a["asset_id"],a["operating_system"],a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"]])
+        ws.append([a["hostname"],a["ip_address"],a["asset_id"],a["operating_system"],a["last_scan_date"],a["scan_age_days"],a["scan_status"],a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"]])
     _table(ws,h,ws.max_row,"CampaignAssets"+str(index))
     ws.freeze_panes=f"A{h+1}"
     for rr in range(h+1,ws.max_row+1):
-        if (ws.cell(rr,7).value or 0)>0: ws.cell(rr,7).fill=PatternFill("solid",fgColor=RED); ws.cell(rr,7).font=Font(color=RED_DARK,bold=True)
-        if (ws.cell(rr,8).value or 0)>0: ws.cell(rr,8).fill=PatternFill("solid",fgColor=ORANGE)
-        if (ws.cell(rr,9).value or 0)>0: ws.cell(rr,9).fill=PatternFill("solid",fgColor=RED)
+        status=ws.cell(rr,7).value
+        if status=="Stale": ws.cell(rr,7).fill=PatternFill("solid",fgColor=RED); ws.cell(rr,7).font=Font(color=RED_DARK,bold=True)
+        elif status=="Aging": ws.cell(rr,7).fill=PatternFill("solid",fgColor=YELLOW)
+        elif status=="Current": ws.cell(rr,7).fill=PatternFill("solid",fgColor=GREEN)
+        if (ws.cell(rr,10).value or 0)>0: ws.cell(rr,10).fill=PatternFill("solid",fgColor=RED); ws.cell(rr,10).font=Font(color=RED_DARK,bold=True)
+        if (ws.cell(rr,11).value or 0)>0: ws.cell(rr,11).fill=PatternFill("solid",fgColor=ORANGE)
+        if (ws.cell(rr,12).value or 0)>0: ws.cell(rr,12).fill=PatternFill("solid",fgColor=RED)
     _widths(ws)
 
 def build_operations_report(analysis):
@@ -144,6 +151,7 @@ def build_operations_report(analysis):
     ws["A3"]="Generated"; ws["B3"]=_generated()
     ws["A4"]="Purpose"; ws["B4"]="Translate Rapid7 vulnerability findings into downstream remediation campaigns for Operations. Campaigns consolidate many findings into practical patching actions."
     ws["A6"]="Important"; ws["B6"]="Recommended actions are grouping guidance, not proof that one update remediates every listed finding. Operations should follow approved patch/change procedures and validate with a post-patch scan."
+    ws["A7"]="Scan Freshness"; ws["B7"]="Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date. Freshness indicates confidence in the vulnerability evidence and does not change priority ranking."
     headers=["Patch Campaign","Assets","Findings Addressed","Unique CVEs","CISA KEVs","High EPSS CVEs","Recommended Action"]
     for i,h in enumerate(headers,1): ws.cell(8,i,h)
     _header(ws,8)
@@ -164,12 +172,12 @@ def build_operations_report(analysis):
 
     # Consolidated finding-level campaign data for filtering / ticket creation.
     ws=wb.create_sheet("Campaign Finding Data")
-    headers=["Patch Campaign","Asset ID","Hostname","IP Address","Operating System","CVE","Title","CVSS","Rapid7 Vulnerability ID"]
+    headers=["Patch Campaign","Asset ID","Hostname","IP Address","Operating System","Last Scan","Scan Age (Days)","Scan Status","CVE","Title","CVSS","Rapid7 Vulnerability ID"]
     ws.append(headers); _header(ws,1)
     for c in campaigns:
         for r in c["rows"]:
             aid=str(r.get("asset_id") or ""); a=analysis.get("asset_index",{}).get(aid,{})
-            ws.append([c["name"],aid,a.get("hostname") or r.get("hostname"),a.get("ip_address") or r.get("ip_address"),a.get("operating_system") or r.get("operating_system"),r.get("cve"),r.get("title"),r.get("cvss_v3_score"),r.get("nexpose_id")])
+            ws.append([c["name"],aid,a.get("hostname") or r.get("hostname"),a.get("ip_address") or r.get("ip_address"),a.get("operating_system") or r.get("operating_system"),a.get("last_scan_timestamp") or "Unknown",a.get("scan_age_days"),a.get("scan_status") or "Unknown",r.get("cve"),r.get("title"),r.get("cvss_v3_score"),r.get("nexpose_id")])
     _table(ws,1,ws.max_row,"CampaignFindingData"); ws.freeze_panes="A2"; _widths(ws)
 
     out=BytesIO(); wb.save(out); out.seek(0); return out, campaigns

@@ -2,7 +2,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.6.2
+## Current Release — v0.6.3
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -67,13 +67,23 @@ Expected columns:
 
 Optional OS fields used by the Operations/Patching report:
 
-`operating_system`, `os_vendor`, `os_family`, `os_name`, `os_version`, `os_architecture`
+`operating_system`, `os_vendor`, `os_family`, `os_name`, `os_version`, `os_architecture`, `last_scan_date`
+
+`last_scan_data` is also accepted as a compatibility alias for randomized/test exports. Scan freshness: Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date.
 
 Rapid7 uploads are processed transiently and are not intentionally persisted by the application.
 
 ---
 
 # Release Notes
+
+## v0.6.3 — 2026-09-23 — Rapid7 Scan Freshness
+- Added optional Rapid7 `last_scan_date` ingestion (`last_scan_data` compatibility alias).
+- Added dynamic Last Scan, Scan Age, and Scan Status throughout asset review.
+- Freshness thresholds: Current <3 days; Aging 3–10 days; Stale >10 days; Unknown when no valid scan date exists.
+- Added scan freshness to Security and Operations reports and data-quality summaries.
+- Scan freshness is a data-confidence indicator and does not change priority ranking.
+
 
 ## v0.6.2 — 2026-09-22 — Transparent Review Prioritization
 - Added explained default prioritization to Vulnerability Overview and Asset Overview.
