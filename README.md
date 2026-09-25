@@ -1,5 +1,14 @@
 # VulnPrioritizer
 
+## v0.7.1 — Asset Classification Rule Corrections (2026-09-25)
+- Changed asset naming rules to prefix/wildcard matching (`NYL*`, `NYP*`, `HLSNY*`, `HLSI*`, `SLD*`) rather than fixed digit counts.
+- Added `HLSNY200*` and exact `HLSNY201` as NetApp overrides.
+- Added `LHT*` as IBM iSeries.
+- Added VMware ESXi Server classification from explicit Rapid7 OS data.
+- Preserves Rapid7 OS values and records classification provenance.
+- Updated Information page with rule precedence and UNKNOWN handling.
+
+
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
 ## Current Release — v0.6.3

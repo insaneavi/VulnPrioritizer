@@ -119,7 +119,7 @@ def parse_rapid7_csv(file_obj, intel):
               "last_scan_timestamp":"" if pd.isna(r.last_scan_date) else r.last_scan_date.strftime("%Y-%m-%d %H:%M:%S"),
               "scan_age_days":None if pd.isna(r.scan_age_days) else int(r.scan_age_days),
               "scan_status":r.scan_status}
-        item.update(classify_asset(r.hostname))
+        item.update(classify_asset(r.hostname, r.operating_system))
         signals=[]
         if item["kev_cves"]: signals.append(f'KEV: {item["kev_cves"]}')
         if item["high_epss_cves"]: signals.append(f'High EPSS: {item["high_epss_cves"]}')
