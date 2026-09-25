@@ -1,5 +1,12 @@
 # VulnPrioritizer
 
+## v0.7.4 — Workstation Classification & Interactive Asset Review (2026-09-25)
+
+- Renamed Laptop to Workstation.
+- NYL*, NYV*, and NYD* now classify as Workstation / New York / Internal.
+- Asset Classification Review Asset Group counters are clickable and automatically filter the table below.
+- Classification documentation/report terminology updated.
+
 ## v0.7.3 — Asset Classification Reporting Fix (2026-09-25)
 
 - Fixed the v0.7.2 Docker startup failure caused by the missing `xlsxwriter` package.
@@ -198,7 +205,7 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 
 
 ## v0.7.0 — Asset Classification & Inventory Visibility (2026-09-25)
-- Hostname-based asset tags: NYP#### Printer/New York; NYL#### Laptop/New York; HLSNY#### Server/New York; HLSI### Domain Controller/Other Team; SLD#### Server/London.
+- Hostname-based asset tags: NYP* Printer/New York; NYL*, NYV*, and NYD* Workstation/New York; HLSNY* Server/New York; HLSI* Domain Controller/Other Team; SLD* Server/London.
 - Unmatched hostnames are explicitly classified as UNKNOWN for research; the application does not guess.
 - Operating system continues to come from Rapid7 data.
 - Asset Overview and Asset Investigation show classification context.
