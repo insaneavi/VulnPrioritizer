@@ -1,5 +1,14 @@
 # VulnPrioritizer
 
+## v0.7.2 — Asset Classification Review & Reporting (2026-09-25)
+
+- Added dedicated Asset Classification Review page with one row per Rapid7 asset.
+- Added filters for Asset Group, Location, Classification Source, and Scan Status.
+- Added Classification Rule provenance showing exactly why each asset received its tags.
+- Added dedicated Excel classification audit export with Summary, Detail, and UNKNOWN Assets worksheets.
+- Corrected Information page to show all current rules, wildcard notation, and precedence.
+- Scan freshness remains color coded and does not change vulnerability priority.
+
 ## v0.7.1 — Asset Classification Rule Corrections (2026-09-25)
 - Changed asset naming rules to prefix/wildcard matching (`NYL*`, `NYP*`, `HLSNY*`, `HLSI*`, `SLD*`) rather than fixed digit counts.
 - Added `HLSNY200*` and exact `HLSNY201` as NetApp overrides.

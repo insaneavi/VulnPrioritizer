@@ -7,11 +7,13 @@ from services.analysis_store import AnalysisStore
 from services.network_config import NetworkConfig
 from services.reporting import build_report
 from services.operations_reporting import build_operations_report
+from services.asset_classification_reporting import build_asset_classification_report
+from services.asset_classification import ASSET_CLASSIFICATION_RULES
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.7.1"
+APP_VERSION = "0.7.2"
 RELEASE_DATE = "2026-09-25"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
@@ -50,7 +52,7 @@ def update_threat_intelligence():
 
 @app.get("/information")
 def information():
-    return render_template("information.html")
+    return render_template("information.html", classification_rules=ASSET_CLASSIFICATION_RULES)
 
 @app.get("/release-notes")
 def release_notes():
@@ -154,6 +156,25 @@ def priority_drilldown(analysis_id,category):
     else: return redirect(url_for("dashboard",analysis_id=analysis_id))
     return render_template("priority_detail.html",analysis_id=analysis_id,title=title,explanation=ex,mode=mode,rows=rows)
 
+
+
+@app.get("/analysis/<analysis_id>/assets/classification")
+def asset_classification_review(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    return render_template("asset_classification.html",analysis_id=analysis_id,**analysis)
+
+@app.get("/analysis/<analysis_id>/assets/classification/excel")
+def asset_classification_excel(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    report=build_asset_classification_report(analysis)
+    filename=f"VulnPrioritizer_Asset_Classification_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
+    return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.get("/analysis/<analysis_id>/reporting")
 def reporting(analysis_id):
