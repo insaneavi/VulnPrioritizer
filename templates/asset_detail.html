@@ -2,10 +2,10 @@
 <div class="breadcrumbs"><a href="{{url_for('dashboard',analysis_id=analysis_id)}}">Dashboard</a><span>›</span><span>Asset Overview</span><span>›</span><b>{{asset.hostname}}</b></div>
 <div class="detailhead"><div><small>ASSET INVESTIGATION</small><h1>{{asset.hostname}}</h1><p>{{asset.ip_address}} · Rapid7 Asset ID {{asset.asset_id}}</p></div><a class="button secondary" href="{{url_for('dashboard',analysis_id=analysis_id)}}">← Back to Dashboard</a></div>
 <section class="detailmetrics">
-<div><span>Total Findings</span><b>{{asset.findings}}</b></div><div><span>Unique CVEs</span><b>{{asset.unique_cves}}</b></div>
+<div><span>Asset Group</span><b>{{asset.asset_group}}</b></div><div><span>Location</span><b>{{asset.location}}</b></div><div><span>Management</span><b>{{asset.management}}</b></div><div><span>Operating System</span><b class="smallvalue">{{asset.operating_system}}</b></div><div><span>Total Findings</span><b>{{asset.findings}}</b></div><div><span>Unique CVEs</span><b>{{asset.unique_cves}}</b></div>
 <div><span>CISA KEVs</span><b class="{{'dangertext' if asset.kev_cves else ''}}">{{asset.kev_cves}}</b></div>
 <div><span>EPSS ≥ 10%</span><b>{{asset.high_epss_cves}}</b></div><div><span>CVSS ≥ 9 Findings</span><b>{{asset.critical_findings}}</b></div><div><span>Highest CVSS</span><b>{{asset.max_cvss}}</b></div>
-<div><span>Last Rapid7 Scan</span><b>{{asset.last_scan_date or "Unknown"}}</b></div><div><span>Scan Age</span><b>{% if asset.scan_age_days is not none %}{{asset.scan_age_days}} days{% else %}Unknown{% endif %}</b></div><div><span>Scan Status</span><b>{{asset.scan_status}}</b></div>
+<div><span>Last Rapid7 Scan</span><b>{{asset.last_scan_date or "Unknown"}}</b></div><div><span>Scan Age</span><b>{% if asset.scan_age_days is not none %}{{asset.scan_age_days}} days{% else %}Unknown{% endif %}</b></div><div><span>Scan Status</span><b><span class="scan-badge scan-{{asset.scan_status|lower}}">{{asset.scan_status}}</span></b></div>
 </section>
 <div class="quality"><b>Scan Freshness:</b> Current = &lt;3 days · Aging = 3–10 days · Stale = &gt;10 days · Unknown = no valid scan date. Freshness is a data-confidence indicator and does not change vulnerability priority.</div>
 <section class="panel"><div class="tableheading"><div><h2>Vulnerabilities affecting this asset</h2><p class="muted">Select a CVE to investigate its exposure across the environment.</p></div><input class="search" data-table="assetvulns" placeholder="Search CVE or title"></div>

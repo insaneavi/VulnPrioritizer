@@ -171,3 +171,12 @@ Rapid7 uploads are processed transiently and are not intentionally persisted by 
 - Summary and data-quality metrics.
 - Docker/Portainer deployment support.
 - No application database.
+
+
+## v0.7.0 — Asset Classification & Inventory Visibility (2026-09-25)
+- Hostname-based asset tags: NYP#### Printer/New York; NYL#### Laptop/New York; HLSNY#### Server/New York; HLSI### Domain Controller/Other Team; SLD#### Server/London.
+- Unmatched hostnames are explicitly classified as UNKNOWN for research; the application does not guess.
+- Operating system continues to come from Rapid7 data.
+- Asset Overview and Asset Investigation show classification context.
+- Scan status is visually coded: green Current (<3 days), yellow Aging (3–10), red Stale (>10), gray Unknown.
+- Information page documents all classification and scan-freshness logic.

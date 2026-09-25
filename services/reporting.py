@@ -90,18 +90,23 @@ def build_report(analysis):
     vws=wb.create_sheet("Vulnerability Overview"); _write_vulns(vws,analysis["vulnerabilities"])
     vws["A1"].comment=Comment("Default review order: CISA KEV first, then higher EPSS, higher CVSS, affected asset count, and vulnerability age as a final contextual tie-breaker. A KEV or high-EPSS CVE may rank above a CVSS 9+ CVE. This is not a proprietary risk score.","VulnPrioritizer")
 
-    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Last Scan","Scan Age (Days)","Scan Status","Priority Signals","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
-    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("last_scan_timestamp"),a.get("scan_age_days"),a.get("scan_status"),a.get("priority_signals"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
+    ws=wb.create_sheet("Asset Overview"); ah=["Asset ID","Hostname","IP Address","Asset Group","Location","Management","Operating System","Classification Source","Last Scan","Scan Age (Days)","Scan Status","Priority Signals","Total Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings","Maximum CVSS"]; ws.append(ah)
+    for a in analysis["assets_table"]: ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("asset_group"),a.get("location"),a.get("management"),a.get("operating_system"),a.get("classification_source"),a.get("last_scan_timestamp"),a.get("scan_age_days"),a.get("scan_status"),a.get("priority_signals"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"],float(a["max_cvss"]) if a["max_cvss"] else None])
     _style_header(ws); _finish(ws); _table(ws,"TAssetOverview")
     ws["A1"].comment=Comment("Default review order: CISA KEV CVE count, High EPSS CVE count (>=10%), Critical CVSS findings (>=9.0), maximum CVSS, then overall CVE/finding exposure. CMDB business context is not yet included. This is not a proprietary risk score.","VulnPrioritizer")
     for r in range(2,ws.max_row+1):
-        scan_state=ws.cell(r,6).value
-        if scan_state=="Stale": ws.cell(r,6).fill=PatternFill("solid",fgColor=RED); ws.cell(r,6).font=Font(color=RED_DARK,bold=True)
-        elif scan_state=="Aging": ws.cell(r,6).fill=PatternFill("solid",fgColor=YELLOW)
-        elif scan_state=="Current": ws.cell(r,6).fill=PatternFill("solid",fgColor=GREEN)
-        if (ws.cell(r,10).value or 0)>0: ws.cell(r,10).fill=PatternFill("solid",fgColor=RED); ws.cell(r,10).font=Font(color=RED_DARK,bold=True)
-        if (ws.cell(r,11).value or 0)>0: ws.cell(r,11).fill=PatternFill("solid",fgColor=ORANGE)
-        if (ws.cell(r,12).value or 0)>0: ws.cell(r,12).fill=PatternFill("solid",fgColor=RED)
+        scan_state=ws.cell(r,16).value
+        if scan_state=="Stale": ws.cell(r,16).fill=PatternFill("solid",fgColor=RED); ws.cell(r,11).font=Font(color=RED_DARK,bold=True)
+        elif scan_state=="Aging": ws.cell(r,16).fill=PatternFill("solid",fgColor=YELLOW)
+        elif scan_state=="Current": ws.cell(r,16).fill=PatternFill("solid",fgColor=GREEN)
+        if (ws.cell(r,15).value or 0)>0: ws.cell(r,15).fill=PatternFill("solid",fgColor=RED); ws.cell(r,15).font=Font(color=RED_DARK,bold=True)
+        if (ws.cell(r,16).value or 0)>0: ws.cell(r,16).fill=PatternFill("solid",fgColor=ORANGE)
+        if (ws.cell(r,17).value or 0)>0: ws.cell(r,17).fill=PatternFill("solid",fgColor=RED)
+
+    ws=wb.create_sheet("UNKNOWN Assets"); uh=["Asset ID","Hostname","IP Address","Operating System","Last Scan","Scan Age (Days)","Scan Status","Findings","Unique CVEs","CISA KEVs","EPSS ≥10%","CVSS ≥9 Findings"]; ws.append(uh)
+    for a in analysis["assets_table"]:
+        if a.get("asset_group")=="UNKNOWN": ws.append([a["asset_id"],a["hostname"],a["ip_address"],a.get("operating_system"),a.get("last_scan_timestamp"),a.get("scan_age_days"),a.get("scan_status"),a["findings"],a["unique_cves"],a["kev_cves"],a["high_epss_cves"],a["critical_findings"]])
+    _style_header(ws); _finish(ws); _table(ws,"TUnknownAssets")
 
     kevrows=[v for v in analysis["vulnerabilities"] if v.get("kev")]
     ws=wb.create_sheet("CISA KEV"); kh=["CVE","Title","Vendor","Product","CVSS","EPSS","Affected Assets","Date Added to KEV","CISA Due Date","Known Ransomware Campaign Use","Required Action"]; ws.append(kh)
@@ -119,7 +124,7 @@ def build_report(analysis):
     for r in range(2,ws.max_row+1):
         if (ws.cell(r,2).value or 0)>0: ws.cell(r,2).fill=PatternFill("solid",fgColor=YELLOW); ws.cell(r,2).font=Font(bold=True)
 
-    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Vulnerabilities: KEV -> EPSS -> CVSS -> affected assets -> age. Assets: KEV count -> High EPSS count -> Critical CVSS findings -> max CVSS -> overall exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Scan freshness","Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date. Freshness is a data-confidence indicator and does not change priority ranking."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
+    ws=wb.create_sheet("Report Information"); ws.append(["Item","Value"]); info=[("Report purpose","Threat-enriched vulnerability review from a Rapid7 finding-level export."),("Priority model","No proprietary organizational risk score. Vulnerabilities: KEV -> EPSS -> CVSS -> affected assets -> age. Assets: KEV count -> High EPSS count -> Critical CVSS findings -> max CVSS -> overall exposure."),("High EPSS threshold","10% or greater."),("Critical CVSS threshold","9.0 or greater."),("Asset classification","Hostname rules: NYP#### Printer/New York; NYL#### Laptop/New York; HLSNY#### Server/New York; HLSI### Domain Controller/Other Team; SLD#### Server/London. Unmatched assets are UNKNOWN. OS comes from Rapid7, not hostname inference."),("Scan freshness","Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date. Freshness is a data-confidence indicator and does not change priority ranking."),("Data handling","Rapid7 analysis and generated report files are temporary; public threat intelligence is stored separately."),("EPSS dataset",str(status.get("epss_dataset_date") or status.get("epss",{}).get("dataset_date") or "Unavailable")),("CISA KEV dataset",str(status.get("kev_dataset_date") or status.get("kev",{}).get("dataset_date") or "Unavailable"))]
     for x in info: ws.append(x)
     _style_header(ws); _finish(ws); _table(ws,"TReportInfo")
 

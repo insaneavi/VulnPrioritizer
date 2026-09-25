@@ -1,4 +1,5 @@
 import pandas as pd
+from services.asset_classification import classify_asset
 
 REQUIRED_COLUMNS={"asset_id","ip_address","hostname","nexpose_id","cve","title","date_published","severity_score","cvss_v3_score"}
 
@@ -118,6 +119,7 @@ def parse_rapid7_csv(file_obj, intel):
               "last_scan_timestamp":"" if pd.isna(r.last_scan_date) else r.last_scan_date.strftime("%Y-%m-%d %H:%M:%S"),
               "scan_age_days":None if pd.isna(r.scan_age_days) else int(r.scan_age_days),
               "scan_status":r.scan_status}
+        item.update(classify_asset(r.hostname))
         signals=[]
         if item["kev_cves"]: signals.append(f'KEV: {item["kev_cves"]}')
         if item["high_epss_cves"]: signals.append(f'High EPSS: {item["high_epss_cves"]}')
@@ -166,7 +168,8 @@ def parse_rapid7_csv(file_obj, intel):
         "scan_current":int((asset.scan_status=="Current").sum()),
         "scan_aging":int((asset.scan_status=="Aging").sum()),
         "scan_stale":int((asset.scan_status=="Stale").sum()),
-        "scan_unknown":int((asset.scan_status=="Unknown").sum())},
+        "scan_unknown":int((asset.scan_status=="Unknown").sum()),
+        "asset_group_unknown":int(sum(1 for a in assets if a["asset_group"]=="UNKNOWN"))},
       "quality":{"missing_cve":int((~df.cve.str.startswith("CVE-")).sum()),
         "missing_hostname":int((df.hostname=="").sum()),"missing_cvss":int(df.cvss_v3_score.isna().sum()),
         "missing_scan_date":int((asset.scan_status=="Unknown").sum())},
