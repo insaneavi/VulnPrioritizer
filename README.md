@@ -1,5 +1,11 @@
 # VulnPrioritizer
 
+## v0.7.3 — Asset Classification Reporting Fix (2026-09-25)
+
+- Fixed the v0.7.2 Docker startup failure caused by the missing `xlsxwriter` package.
+- Asset Classification Excel reporting now uses the existing `openpyxl` dependency.
+- Preserves Classification Summary, Classification Detail, UNKNOWN Assets, classification provenance, and scan-status colors.
+
 ## v0.7.2 — Asset Classification Review & Reporting (2026-09-25)
 
 - Added dedicated Asset Classification Review page with one row per Rapid7 asset.
