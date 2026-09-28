@@ -3,11 +3,13 @@ ASSET_CLASSIFICATION_RULES = [
     {"priority":2,"detection":"Rapid7 OS identifies VMware ESXi","asset_group":"VMware ESXi Server","location":"UNKNOWN","management":"Internal","source":"Rapid7 OS"},
     {"priority":3,"detection":"LHT*","asset_group":"IBM iSeries","location":"UNKNOWN","management":"Internal","source":"Hostname Rule"},
     {"priority":4,"detection":"NYP*","asset_group":"Printer","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":5,"detection":"NYL* / NYV* / NYD*","asset_group":"Workstation","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":6,"detection":"HLSNY*","asset_group":"Server","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":7,"detection":"HLSI*","asset_group":"Domain Controller","location":"UNKNOWN","management":"Other Team","source":"Hostname Rule"},
-    {"priority":8,"detection":"SLD*","asset_group":"Server","location":"London","management":"Internal","source":"Hostname Rule"},
-    {"priority":9,"detection":"No defined match","asset_group":"UNKNOWN","location":"UNKNOWN","management":"UNKNOWN","source":"No Match"},
+    {"priority":5,"detection":"PHLAP*","asset_group":"Workstation","location":"London","management":"Kyndryl","source":"Hostname Rule"},
+    {"priority":6,"detection":"HLUKLON*","asset_group":"Printer","location":"London","management":"Kyndryl","source":"Hostname Rule"},
+    {"priority":7,"detection":"NYL* / NYV* / NYD*","asset_group":"Workstation","location":"New York","management":"Internal","source":"Hostname Rule"},
+    {"priority":8,"detection":"HLSNY*","asset_group":"Server","location":"New York","management":"Internal","source":"Hostname Rule"},
+    {"priority":9,"detection":"HLSI*","asset_group":"Domain Controller","location":"UNKNOWN","management":"Other Team","source":"Hostname Rule"},
+    {"priority":10,"detection":"SLD*","asset_group":"Server","location":"London","management":"Internal","source":"Hostname Rule"},
+    {"priority":11,"detection":"No defined match","asset_group":"UNKNOWN","location":"UNKNOWN","management":"UNKNOWN","source":"No Match"},
 ]
 
 def classify_asset(hostname, operating_system=""):
@@ -21,6 +23,8 @@ def classify_asset(hostname, operating_system=""):
     rules = [
         ("LHT", "IBM iSeries", "UNKNOWN", "Internal", "LHT*"),
         ("NYP", "Printer", "New York", "Internal", "NYP*"),
+        ("PHLAP", "Workstation", "London", "Kyndryl", "PHLAP*"),
+        ("HLUKLON", "Printer", "London", "Kyndryl", "HLUKLON*"),
         ("NYL", "Workstation", "New York", "Internal", "NYL*"),
         ("NYV", "Workstation", "New York", "Internal", "NYV*"),
         ("NYD", "Workstation", "New York", "Internal", "NYD*"),

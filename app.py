@@ -9,12 +9,14 @@ from services.reporting import build_report
 from services.operations_reporting import build_operations_report
 from services.asset_classification_reporting import build_asset_classification_report
 from services.asset_classification import ASSET_CLASSIFICATION_RULES
+from services.network_breakdown import build_network_breakdown, build_network_report, normalize_prefix
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-APP_VERSION = "0.7.4"
-RELEASE_DATE = "2026-09-25"
+app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
+APP_VERSION = "0.8.0"
+RELEASE_DATE = "2026-09-28"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
 network_config = NetworkConfig()
@@ -63,6 +65,22 @@ def analyze():
     upload = request.files.get("rapid7_file")
     if not upload or not upload.filename:
         flash("Select a Rapid7 CSV file.")
+        return redirect(url_for("index"))
+    filename = upload.filename.strip()
+    if not filename.lower().endswith(".csv"):
+        flash("Only .csv Rapid7 exports are accepted.")
+        return redirect(url_for("index"))
+    try:
+        sample = upload.stream.read(8192)
+        upload.stream.seek(0)
+        if b"\x00" in sample:
+            raise ValueError("The selected file contains binary data and does not appear to be a CSV.")
+        sample.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        flash("The selected file is not a supported UTF-8 CSV export.")
+        return redirect(url_for("index"))
+    except ValueError as exc:
+        flash(str(exc))
         return redirect(url_for("index"))
     try:
         result = parse_rapid7_csv(upload, intel)
@@ -158,6 +176,28 @@ def priority_drilldown(analysis_id,category):
 
 
 
+
+@app.get("/analysis/<analysis_id>/network")
+def network_breakdown(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    prefix=normalize_prefix(request.args.get("prefix",24))
+    network=build_network_breakdown(analysis["assets_table"],prefix)
+    return render_template("network_breakdown.html",analysis_id=analysis_id,network=network)
+
+@app.get("/analysis/<analysis_id>/network/excel")
+def network_breakdown_excel(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    prefix=normalize_prefix(request.args.get("prefix",24))
+    report=build_network_report(analysis["assets_table"],prefix)
+    filename=f"VulnPrioritizer_Network_Breakdown_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
+    return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 @app.get("/analysis/<analysis_id>/assets/classification")
 def asset_classification_review(analysis_id):
     analysis=analysis_store.get(analysis_id)
@@ -207,3 +247,8 @@ def reporting_operations_excel(analysis_id):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8085)
+
+@app.errorhandler(413)
+def upload_too_large(_error):
+    flash("The Rapid7 CSV exceeds the 100 MB upload limit.")
+    return redirect(url_for("index"))

@@ -1,5 +1,16 @@
 # VulnPrioritizer
 
+## v0.8.0 — Network Visibility & Secure Upload (2026-09-28)
+
+- Added secure drag-and-drop Rapid7 CSV selection with browse fallback and explicit Analyze confirmation.
+- Added server-side 100 MB size limit, CSV extension checks, UTF-8/binary-content checks, and existing required-column validation.
+- Added `PHLAP*` → Workstation / London / Kyndryl.
+- Added `HLUKLON*` → Printer / London / Kyndryl.
+- Added Network Breakdown with configurable IPv4 prefix (default `/24`) and observed-subnet/unique-asset counts.
+- Subnet asset counts are clickable and filter the detailed asset table.
+- Added Network Breakdown Excel export with Network Summary, Asset Detail, and Report Information.
+- Network results are labeled **Observed Subnets** because this export cannot by itself prove complete Rapid7 scanner coverage.
+
 ## v0.7.4 — Workstation Classification & Interactive Asset Review (2026-09-25)
 
 - Renamed Laptop to Workstation.
@@ -33,7 +44,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.6.3
+## Current Release — v0.8.0
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
