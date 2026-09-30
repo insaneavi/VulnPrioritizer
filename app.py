@@ -15,7 +15,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
-APP_VERSION = "0.8.1"
+APP_VERSION = "0.8.2"
 RELEASE_DATE = "2026-09-30"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)

@@ -15,7 +15,7 @@ def parse_rapid7_csv(file_obj, intel):
 
     text_columns=["asset_id","ip_address","hostname","nexpose_id","cve","title"]
     optional_os=["operating_system","os_vendor","os_family","os_name","os_version","os_architecture"]
-    optional_solution=["solution_id","solution_summary","solution_fix","solution_estimate"]
+    optional_solution=["solution_id","solution_summary","solution_fix","solution_estimate","finding_evidence"]
     for c in optional_solution:
         if c not in df.columns:
             df[c]=""
