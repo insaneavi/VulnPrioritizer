@@ -15,6 +15,11 @@ def parse_rapid7_csv(file_obj, intel):
 
     text_columns=["asset_id","ip_address","hostname","nexpose_id","cve","title"]
     optional_os=["operating_system","os_vendor","os_family","os_name","os_version","os_architecture"]
+    optional_solution=["solution_id","solution_summary","solution_fix","solution_estimate"]
+    for c in optional_solution:
+        if c not in df.columns:
+            df[c]=""
+        text_columns.append(c)
     for c in optional_os:
         if c not in df.columns:
             df[c]=""
@@ -119,7 +124,7 @@ def parse_rapid7_csv(file_obj, intel):
               "last_scan_timestamp":"" if pd.isna(r.last_scan_date) else r.last_scan_date.strftime("%Y-%m-%d %H:%M:%S"),
               "scan_age_days":None if pd.isna(r.scan_age_days) else int(r.scan_age_days),
               "scan_status":r.scan_status}
-        item.update(classify_asset(r.hostname, r.operating_system))
+        item.update(classify_asset(r.hostname, r.operating_system, r.asset_id))
         signals=[]
         if item["kev_cves"]: signals.append(f'KEV: {item["kev_cves"]}')
         if item["high_epss_cves"]: signals.append(f'High EPSS: {item["high_epss_cves"]}')

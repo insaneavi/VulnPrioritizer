@@ -10,3 +10,5 @@
 
 .classification-card{cursor:pointer;transition:transform .12s ease,border-color .12s ease}.classification-card:hover,.classification-card:focus{transform:translateY(-2px);border-color:#7f9cf5;outline:none}.classification-card b{text-decoration:underline;text-underline-offset:3px}
 .drop.dragover{border-color:var(--accent);background:rgba(135,164,255,.10);box-shadow:0 0 0 2px rgba(135,164,255,.15) inset}.file-actions{margin-top:10px;display:flex;justify-content:flex-end}.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.count-link{background:none;border:0;color:var(--accent);font:inherit;font-weight:900;text-decoration:underline;cursor:pointer;padding:2px 6px}.inline-form{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.inline-form select{margin-left:8px}.compact-heading{align-items:center;margin-bottom:12px}.compact-heading h2{margin:0}
+
+.text-report{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9rem;line-height:1.45;max-height:70vh;overflow:auto}.button-row{display:flex;gap:.6rem;flex-wrap:wrap}

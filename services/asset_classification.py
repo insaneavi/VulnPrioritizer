@@ -1,21 +1,25 @@
 ASSET_CLASSIFICATION_RULES = [
-    {"priority":1,"detection":"HLSNY200* or exact HLSNY201","asset_group":"NetApp","location":"New York","management":"Internal","source":"Hostname Override"},
-    {"priority":2,"detection":"Rapid7 OS identifies VMware ESXi","asset_group":"VMware ESXi Server","location":"UNKNOWN","management":"Internal","source":"Rapid7 OS"},
-    {"priority":3,"detection":"LHT*","asset_group":"IBM iSeries","location":"UNKNOWN","management":"Internal","source":"Hostname Rule"},
-    {"priority":4,"detection":"NYP*","asset_group":"Printer","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":5,"detection":"PHLAP*","asset_group":"Workstation","location":"London","management":"Kyndryl","source":"Hostname Rule"},
-    {"priority":6,"detection":"HLUKLON*","asset_group":"Printer","location":"London","management":"Kyndryl","source":"Hostname Rule"},
-    {"priority":7,"detection":"NYL* / NYV* / NYD*","asset_group":"Workstation","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":8,"detection":"HLSNY*","asset_group":"Server","location":"New York","management":"Internal","source":"Hostname Rule"},
-    {"priority":9,"detection":"HLSI*","asset_group":"Domain Controller","location":"UNKNOWN","management":"Other Team","source":"Hostname Rule"},
-    {"priority":10,"detection":"SLD*","asset_group":"Server","location":"London","management":"Internal","source":"Hostname Rule"},
-    {"priority":11,"detection":"No defined match","asset_group":"UNKNOWN","location":"UNKNOWN","management":"UNKNOWN","source":"No Match"},
+    {"priority":1,"detection":"Rapid7 Asset ID 63789 or 63877","asset_group":"NetApp","location":"UNKNOWN","management":"UNKNOWN","source":"Rapid7 Asset ID Override"},
+    {"priority":2,"detection":"HLSNY200* or exact HLSNY201","asset_group":"NetApp","location":"New York","management":"Internal","source":"Hostname Override"},
+    {"priority":3,"detection":"Rapid7 OS identifies VMware ESXi","asset_group":"VMware ESXi Server","location":"UNKNOWN","management":"Internal","source":"Rapid7 OS"},
+    {"priority":4,"detection":"LHT*","asset_group":"IBM iSeries","location":"UNKNOWN","management":"Internal","source":"Hostname Rule"},
+    {"priority":5,"detection":"NYP*","asset_group":"Printer","location":"New York","management":"Internal","source":"Hostname Rule"},
+    {"priority":6,"detection":"PHLAP*","asset_group":"Workstation","location":"London","management":"Kyndryl","source":"Hostname Rule"},
+    {"priority":7,"detection":"HLUKLON*","asset_group":"Printer","location":"London","management":"Kyndryl","source":"Hostname Rule"},
+    {"priority":8,"detection":"NYL* / NYV* / NYD*","asset_group":"Workstation","location":"New York","management":"Internal","source":"Hostname Rule"},
+    {"priority":9,"detection":"HLSNY*","asset_group":"Server","location":"New York","management":"Internal","source":"Hostname Rule"},
+    {"priority":10,"detection":"HLSI*","asset_group":"Domain Controller","location":"UNKNOWN","management":"Other Team","source":"Hostname Rule"},
+    {"priority":11,"detection":"SLD*","asset_group":"Server","location":"London","management":"Internal","source":"Hostname Rule"},
+    {"priority":12,"detection":"No defined match","asset_group":"UNKNOWN","location":"UNKNOWN","management":"UNKNOWN","source":"No Match"},
 ]
 
-def classify_asset(hostname, operating_system=""):
+def classify_asset(hostname, operating_system="", asset_id=""):
     name = str(hostname or "").strip().upper()
     os_value = str(operating_system or "").strip()
     os_upper = os_value.upper()
+    aid = str(asset_id or "").strip()
+    if aid in {"63789", "63877"}:
+        return {"asset_group":"NetApp","location":"UNKNOWN","management":"UNKNOWN","classification_source":"Rapid7 Asset ID Override","classification_rule":f"Asset ID {aid}"}
     if name.startswith("HLSNY200") or name == "HLSNY201":
         return {"asset_group":"NetApp","location":"New York","management":"Internal","classification_source":"Hostname Override","classification_rule":"HLSNY200* / exact HLSNY201"}
     if "VMWARE" in os_upper and "ESXI" in os_upper:

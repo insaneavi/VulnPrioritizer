@@ -1,5 +1,16 @@
 # VulnPrioritizer
 
+## v0.8.1 — Network Ownership & Head Office Remediation Reporting (2026-09-30)
+
+- Added **Managed By** and **Geolocation** to Network Breakdown and the Network Excel export.
+- Added network rules: `192.168.0.0/16` → Managed By `Not Corporate Owned`; `172.18.252.0/24` → `Service Express` / `UK`; `9.63.0.0/16` → Geolocation `NYC` with Managed By intentionally blank.
+- Added Rapid7 Asset ID `63789` and `63877` overrides as **NetApp** with explicit classification provenance.
+- Added optional remediation fields: `solution_id`, `solution_summary`, `solution_fix`, `solution_estimate`.
+- Removed the Operations/Patching report from the current application and replaced it with the **Head Office Vulnerability Report**.
+- Head Office reporting groups findings by Rapid7 solution, uses the highest-CVSS CVE as the headline, uses Rapid7 `solution_summary` as Resolution, lists affected short hostnames, and lists other CVEs associated with the same solution.
+- Added browser review, **Copy Report**, and **Download TXT**.
+- Updated the Reporting and Information pages with the new methodology.
+
 ## v0.8.0 — Network Visibility & Secure Upload (2026-09-28)
 
 - Added secure drag-and-drop Rapid7 CSV selection with browse fallback and explicit Analyze confirmation.
@@ -44,7 +55,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.8.0
+## Current Release — v0.8.1
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
@@ -107,9 +118,13 @@ Expected columns:
 
 `asset_id`, `ip_address`, `hostname`, `nexpose_id`, `cve`, `title`, `date_published`, `severity_score`, `cvss_v3_score`
 
-Optional OS fields used by the Operations/Patching report:
+Optional asset/scan fields:
 
 `operating_system`, `os_vendor`, `os_family`, `os_name`, `os_version`, `os_architecture`, `last_scan_date`
+
+Optional remediation fields used by the Head Office Vulnerability Report:
+
+`solution_id`, `solution_summary`, `solution_fix`, `solution_estimate`
 
 `last_scan_data` is also accepted as a compatibility alias for randomized/test exports. Scan freshness: Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date.
 

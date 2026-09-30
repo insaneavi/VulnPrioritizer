@@ -6,17 +6,17 @@ from services.time_utils import display_time
 from services.analysis_store import AnalysisStore
 from services.network_config import NetworkConfig
 from services.reporting import build_report
-from services.operations_reporting import build_operations_report
 from services.asset_classification_reporting import build_asset_classification_report
 from services.asset_classification import ASSET_CLASSIFICATION_RULES
-from services.network_breakdown import build_network_breakdown, build_network_report, normalize_prefix
+from services.network_breakdown import build_network_breakdown, build_network_report, normalize_prefix, NETWORK_RULES
+from services.head_office_reporting import build_head_office_text, build_head_office_items
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
-APP_VERSION = "0.8.0"
-RELEASE_DATE = "2026-09-28"
+APP_VERSION = "0.8.1"
+RELEASE_DATE = "2026-09-30"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
 network_config = NetworkConfig()
@@ -54,7 +54,7 @@ def update_threat_intelligence():
 
 @app.get("/information")
 def information():
-    return render_template("information.html", classification_rules=ASSET_CLASSIFICATION_RULES)
+    return render_template("information.html", classification_rules=ASSET_CLASSIFICATION_RULES, network_rules=NETWORK_RULES)
 
 @app.get("/release-notes")
 def release_notes():
@@ -235,15 +235,26 @@ def reporting_excel(analysis_id):
     return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
-@app.get("/analysis/<analysis_id>/reporting/operations")
-def reporting_operations_excel(analysis_id):
+@app.get("/analysis/<analysis_id>/reporting/head-office")
+def reporting_head_office(analysis_id):
     analysis=analysis_store.get(analysis_id)
     if not analysis:
         flash("This analysis session is no longer available. Upload the Rapid7 report again.")
         return redirect(url_for("index"))
-    report,_=build_operations_report(analysis)
-    filename=f"VulnPrioritizer_Operations_Patching_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
-    return send_file(report,as_attachment=True,download_name=filename,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    text_report=build_head_office_text(analysis)
+    items=build_head_office_items(analysis)
+    return render_template("head_office_report.html",analysis_id=analysis_id,report_text=text_report,item_count=len(items))
+
+@app.get("/analysis/<analysis_id>/reporting/head-office.txt")
+def reporting_head_office_text(analysis_id):
+    analysis=analysis_store.get(analysis_id)
+    if not analysis:
+        flash("This analysis session is no longer available. Upload the Rapid7 report again.")
+        return redirect(url_for("index"))
+    text_report=build_head_office_text(analysis)
+    filename=f"VulnPrioritizer_Head_Office_{datetime.now().strftime('%Y-%m-%d_%H%M')}.txt"
+    from io import BytesIO
+    return send_file(BytesIO(text_report.encode("utf-8")),as_attachment=True,download_name=filename,mimetype="text/plain; charset=utf-8")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8085)
