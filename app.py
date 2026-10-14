@@ -14,8 +14,8 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "vulnprioritizer-local-session-key"
-app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
-APP_VERSION = "0.8.2"
+app.config["MAX_CONTENT_LENGTH"] = 250 * 1024 * 1024
+APP_VERSION = "0.8.3"
 RELEASE_DATE = "2026-09-30"
 intel = ThreatIntelManager()
 analysis_store = AnalysisStore(max_sessions=5)
@@ -261,5 +261,5 @@ if __name__ == "__main__":
 
 @app.errorhandler(413)
 def upload_too_large(_error):
-    flash("The Rapid7 CSV exceeds the 100 MB upload limit.")
+    flash("The Rapid7 CSV exceeds the 250 MB upload limit.")
     return redirect(url_for("index"))

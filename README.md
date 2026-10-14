@@ -1,5 +1,14 @@
 # VulnPrioritizer
 
+## v0.8.3 — Authoritative Network Boundaries & 250 MB Uploads (2026-10-14)
+
+- Increased CSV maximum size from **100 MB to 250 MB** in Flask and drag-and-drop validation. Files must still pass existing CSV/schema checks; large files may require additional container RAM.
+- Replaced broad `9.63.0.0/16 → NYC` with **only** `9.63.94.0/23`, `9.63.96.0/23`, `9.63.98.0/23`, `9.63.104.0/23`, `9.63.110.0/23` → NYC.
+- Added `9.48.0.0/16 → UK` geolocation, with confirmed authoritative boundaries `9.48.140.0/23`, `9.48.142.0/23`, `9.48.192.0/23`. Other UK addresses have no assumed authoritative mask.
+- Kept `192.168.0.0/16 → Not Corporate Owned` and `172.18.252.0/24 → Service Express / UK`.
+- Network Excel now distinguishes **Observed Subnet** (chosen display prefix) from **Authoritative Subnet** (confirmed network boundary). Mixed display groupings may contain multiple authoritative subnets.
+- Updated Information page and release notes; existing Head Office report and finding-evidence behavior unchanged.
+
 ## v0.8.2 — Finding Evidence & Enhanced Head Office Reporting (2026-09-30)
 
 - Added optional `finding_evidence` support from Rapid7 finding-level vulnerability-instance proof.
@@ -65,7 +74,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.8.2
+## Current Release — v0.8.3
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
