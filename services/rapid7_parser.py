@@ -84,8 +84,17 @@ def parse_rapid7_csv(file_obj, intel):
     asset["scan_age_days"] = asset["last_scan_date"].map(scan_age_days)
     asset["scan_status"] = asset["scan_age_days"].map(scan_status)
 
-    asset["kev_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(kev_cves))].cve.nunique())
-    asset["high_epss_cves"]=asset.asset_id.map(lambda a:df[(df.asset_id==a)&(df.cve.isin(high_epss))].cve.nunique())
+    # Compute each unique asset/CVE count in a single grouped pass. Repeatedly
+    # scanning the full findings table per asset caused Gunicorn worker timeouts
+    # with large Rapid7 exports. Missing matches intentionally count as zero.
+    def distinct_cves_by_asset(cves):
+        return (valid.loc[valid["cve"].isin(cves)]
+                .groupby("asset_id")["cve"].nunique())
+
+    asset["kev_cves"] = (asset["asset_id"].map(distinct_cves_by_asset(kev_cves))
+                          .fillna(0).astype(int))
+    asset["high_epss_cves"] = (asset["asset_id"].map(distinct_cves_by_asset(high_epss))
+                                .fillna(0).astype(int))
     asset=asset.sort_values(["kev_cves","high_epss_cves","critical_findings","max_cvss","unique_cves","findings"],ascending=[False,False,False,False,False,False],na_position="last")
 
     vulns=[]

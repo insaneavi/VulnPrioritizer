@@ -1,5 +1,10 @@
 # VulnPrioritizer
 
+## v0.8.3.1 — Rapid7 Analysis Performance Hotfix (2026-10-14)
+- Replaced repeated per-asset scans of all findings for KEV and high-EPSS counts with grouped unique-CVE calculations, avoiding Gunicorn timeouts on large exports.
+- Header version and release date now derive from the latest in-app Release Notes entry.
+- Preserves v0.8.3 network classification, 250 MB upload support, and Head Office reporting.
+
 ## v0.8.3 — Authoritative Network Boundaries & 250 MB Uploads (2026-10-14)
 
 - Increased CSV maximum size from **100 MB to 250 MB** in Flask and drag-and-drop validation. Files must still pass existing CSV/schema checks; large files may require additional container RAM.
@@ -74,7 +79,7 @@
 
 A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
 
-## Current Release — v0.8.3
+## Current Release — v0.8.3.1
 
 VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
 
