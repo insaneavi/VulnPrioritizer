@@ -1,0 +1,218 @@
+## v0.17.4
+- Collection Insights dashboard: quality, historical folder modification activity, milestones, latest 30 days.
+- Database v16 adds folder_modified_at; scanner populates it without reading movie files.
+- What's New: 100 results per SRRDB category; added SPANISH and LATIN exclusions.
+- Live refresh progress endpoint, polling, and diagnostic logs for Box Office Mojo.
+- Box Office Mojo remains best-effort and may still fail due to unsupported HTML or access restrictions.
+
+# Changelog
+
+## v0.17.4
+- Audited all 12 bundled movie lists for changes as of October 16, 2026.
+- Added Spider-Man: Brand New Day (2026, IMDb tt22084616) to the MCU theatrical list, now 38 films.
+- Other 11 bundled lists retained their previous data dates because no verified change was established.
+- No schema migration.
+
+
+## v0.17.4
+- Exclude DUAL, SUBFRENCH, ITALIAN, JAPANESE, and FRENCH from both SRRDB feeds (in addition to MULTI and GERMAN).
+- Fix Box Office Mojo calendar parsing by tracking separate release-date heading rows.
+- Handle individual calendar-month failures without discarding successful months.
+- No database migration.
+
+
+## v0.17.4
+- Fixed over-escaped SRRDB filtering and calendar parsing regexes.
+- Improved SRRDB search paging and avoided overwriting successful cache with empty results.
+- Reworked Box Office Mojo calendar extraction using date headers and month pages.
+- GitHub Actions now stamps Docker builds with the actual UTC build time.
+- No database migration.
+
+## v0.17.4
+- Added What's New: two SRRDB release feeds with dates and ownership.
+- Added best-effort Box Office Mojo rolling-year discovery and cache.
+- Manual refresh, no inventory changes, no schema migration.
+- Second category provisionally BluRay 1080p x264.
+
+
+## v0.17.4
+
+- Fixed bundled lists containing title/year-only entries on databases where the legacy IMDb ID column remains non-nullable.
+- Added automatic retry for failed bundled-list imports during application startup.
+- Restores Pixar, Disney Animated Classics, and Studio Ghibli on upgraded installations.
+- No database changes.
+
+
+## v0.12.0
+
+- Added Pixar Feature Films.
+- Added Disney Animated Classics.
+- Added Marvel Cinematic Universe theatrical films.
+- Added the official DC Animated Movie Universe continuity.
+- Refreshed the Studio Ghibli bundled-list snapshot metadata.
+- No database changes.
+
+
+## v0.12.0
+
+- Added five bundled, versioned movie lists.
+- Removed runtime IMDb HTML scraping.
+- Added per-list data dates, cache timestamps, versions, and sources.
+- Added automatic first-run imports and manual bundled-list reloads.
+- Added list overview completion cards and generic list selection.
+- Added title/year fallback matching for entries without IMDb IDs.
+- Added schema version 13 and automatic migration.
+
+
+## v0.12.0
+
+- Fixed IMDb Top 100 synchronization against the current IMDb chart page.
+- Switched to the official Top 250 chart and imports the first 100 ranked titles.
+- Added multiple parser fallbacks and transactional cache replacement behavior.
+- Existing cached data is retained on failed synchronization.
+- No database changes.
+
+
+## v0.12.0
+
+- Added a reusable Movie Lists section with an IMDb Top 100 list.
+- Added manual synchronization; the application never repeatedly refreshes the list automatically.
+- Stores the synchronized list locally in SQLite and displays the cache date.
+- Compares list entries to present releases using exact cached IMDb IDs.
+- Added All, Owned, and Missing filters with completion statistics.
+- Preserves the previous cache if IMDb synchronization fails.
+- Added schema version 11.
+
+
+## v0.12.0
+
+- Added Duplicate Finder with confirmed IMDb groups and cautious title/year fallback groups.
+- Added persistent IMDb metadata caching on every release to avoid repeated SRRDB lookups.
+- Updated Collection Upgrade to reuse the shared IMDb cache.
+- Added duplicate review states: Keep Both, Cleanup Needed, and Unreviewed.
+- Added Start, Stop, force-reset, progress, and restart recovery for Duplicate Finder.
+- Added a global version/build display and `GET /api/version`.
+- Added schema version 10 and automatic migration of IMDb IDs previously found by Collection Upgrade.
+- Duplicate Finder remains advisory and never modifies or deletes movie folders.
+
+## v0.8.3.2
+
+- Moved Refresh Library Changes to `POST /scan/refresh-library`.
+- Eliminated collision with `/collection-review/{release_id}` regardless of route declaration order.
+- Updated the Collection Review form action.
+- Retained live scan-status polling and automatic page reload.
+- No database changes.
+
+## v0.8.3.1
+
+- Fixed FastAPI interpreting `refresh` as a numeric Collection Review release ID.
+- Changed the refresh endpoint to `/collection-review/refresh-library-changes`.
+- Added live status text and automatic Collection Review reload after refresh completion.
+- No database changes.
+
+## v0.8.3
+
+- Added Refresh Library Changes to Collection Review.
+- Added lightweight top-level inventory refresh.
+- Added targeted verification for newly discovered folders only.
+- Renamed folders are represented as an old Removed record and a new release.
+- Reused scan locking, stopping, progress, and scan-history behavior.
+- No database changes.
+
+
+## v0.8.2
+
+- Fixed Stage 2 candidate searches by removing the rejected `group:` keyword.
+- Retained group, resolution, source, codec, flags, and year as local scoring signals.
+- Fixed Blu-ray.com search-title regex escaping.
+- Added technical-tag fallback parsing for releases without a year.
+- No database changes.
+
+
+## v0.8.1
+
+- Made the Releases page nearly full-width.
+- Reduced row height and whitespace for a clean inventory-list view.
+- Added an internally scrollable table with visible scrollbars.
+- Added a sticky header and more practical fixed column widths.
+- Added compact badges, truncation, hover states, and mobile adjustments.
+- No database changes.
+
+
+## v0.8
+
+- Added advisory Stage 2 SRRDB candidate search.
+- Kept exact verification rules unchanged.
+- Added candidate scoring and likely-difference explanations.
+- Added candidate fields and automatic SQLite migration.
+- Added candidate display, SRRDB links, filters, and dashboard counts.
+- Candidate API failures remain non-fatal and never verify a release.
+
+
+## v0.7
+
+- Added automatic title extraction from release folder names.
+- Added per-release Blu-ray.com search links.
+- Added one-click comment presets and custom Other notes.
+- Added responsive styling for the new controls.
+
+
+## v0.6
+
+- Added the Collection Review workflow.
+- Added review status, comments, and last-reviewed timestamps.
+- Limited the review queue to present, unverified releases.
+- Added review-status filtering and release-name search.
+- Added dashboard counts for Pending, Keep, and Replace Later.
+- Added automatic SQLite schema migration for review fields.
+
+
+## v0.5
+
+- Split inventory and verification state.
+- Added Present and Removed inventory labels.
+- Added Pending, Verified, and Unverified verification labels.
+- Consolidated not-found and API failures under Unverified.
+- Preserved detailed SRRDB failure reasons.
+- Added independent inventory and verification filters.
+- Added automatic database migration from v0.4.x.
+
+
+## v0.4.3
+
+- Fixed the Releases page context variable so results render correctly.
+- Restored release filtering and searching during active verification.
+- Added official application icon assets.
+- Added favicon and header branding.
+- Added an Unraid template Icon URL.
+
+
+## v0.4.2
+
+- Added stale scan recovery during application startup.
+- Added Start Scan and Stop Scan dashboard actions.
+- Added cooperative cancellation during inventory, HTTP requests, and delays.
+- Added explicit SRRDB connect/read/write/pool timeouts.
+- Added stopped and interrupted scan states.
+
+
+## v0.4.1
+
+- Split scanning into inventory and verification phases.
+- Made discovered folders searchable before SRRDB verification completes.
+- Added batch commits during inventory for large archives.
+- Added clearer inventory and verification progress messages.
+
+
+## v0.4
+
+- Added persistent scan progress tracking.
+- Added `/api/scan-status`.
+- Added dashboard progress polling.
+- Added current release and live counters.
+- Added recent verification results.
+- Disabled the Scan button while a scan is active.
+
+## v0.3.1
+
+- Fixed hidden/system-folder setting argument during scans.

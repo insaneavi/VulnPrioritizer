@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="releases-page">
+  <section class="releases-heading releases-heading-actions">
+    <div>
+      <h1>Releases</h1>
+      <span>{{ items|length }} records</span>
+    </div>
+    <a class="button-link export-xlsx-button" href="/releases/export.xlsx">
+      Export All to Excel
+    </a>
+  </section>
+
+  {% if request.query_params.get("imdb_saved") %}
+  <section class="notice success">Manual IMDb override saved.</section>
+  {% elif request.query_params.get("imdb_error") == "invalid" %}
+  <section class="notice error">IMDb IDs must use the format tt followed by 7–10 digits.</section>
+  {% endif %}
+
+  <form class="filters releases-filters" method="get">
+    <input
+      name="q"
+      value="{{ q }}"
+      placeholder="Search releases"
+      aria-label="Search releases"
+    >
+
+    <select name="inventory" aria-label="Inventory status">
+      <option value="">All inventory</option>
+      <option value="present" {% if inventory == "present" %}selected{% endif %}>
+        Present
+      </option>
+      <option value="removed" {% if inventory == "removed" %}selected{% endif %}>
+        Removed
+      </option>
+    </select>
+
+    <select name="verification" aria-label="Verification status">
+      <option value="">All verification</option>
+      <option value="verified" {% if verification == "verified" %}selected{% endif %}>
+        Verified
+      </option>
+      <option value="pending" {% if verification == "pending" %}selected{% endif %}>
+        Pending
+      </option>
+      <option value="unverified" {% if verification == "unverified" %}selected{% endif %}>
+        Unverified
+      </option>
+    </select>
+
+    <button>Filter</button>
+  </form>
+
+  <section class="panel releases-table-panel">
+    <table class="releases-table">
+      <colgroup>
+        <col class="release-column">
+        <col class="inventory-column">
+        <col class="verification-column">
+        <col class="matched-column">
+        <col class="imdb-column">
+        <col class="checked-column">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Release</th>
+          <th>Inventory</th>
+          <th>Verification</th>
+          <th>Matched Release</th>
+          <th>IMDb</th>
+          <th>Last Checked</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for release in items %}
+          <tr>
+            <td class="release-name-cell" title="{{ release.folder_name }}">
+              <span class="release-name">{{ release.folder_name }}</span>
+              {% if release.error_message %}
+                <small class="error">{{ release.error_message }}</small>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge compact-badge {{ 'present' if release.is_present else 'removed' }}">
+                {{ "Present" if release.is_present else "Removed" }}
+              </span>
+            </td>
+            <td>
+              <span class="badge compact-badge {{ release.verification_status }}">
+                {{ release.verification_status|capitalize }}
+              </span>
+            </td>
+            <td class="matched-release-cell" title="{{ release.matched_release or '' }}">
+              {{ release.matched_release or "—" }}
+            </td>
+            <td class="imdb-cell">
+              <form class="compact-imdb-form" method="post" action="/releases/{{ release.id }}/imdb">
+                <input type="hidden" name="return_to" value="/releases">
+                <input
+                  name="imdb_id"
+                  value="{{ release.imdb_id or '' }}"
+                  placeholder="tt1234567"
+                  pattern="tt[0-9]{7,10}"
+                  title="{% if release.imdb_manual_override %}Manual override; SRRDB: {{ release.imdb_srrdb_id or 'none' }}{% else %}Cached from SRRDB{% endif %}"
+                >
+                <button type="submit" name="action" value="save">Save</button>
+                {% if release.imdb_manual_override %}
+                <button class="compact-restore" type="submit" name="action" value="clear" title="Restore SRRDB IMDb ID">↺</button>
+                {% endif %}
+              </form>
+            </td>
+            <td class="checked-cell">
+              {{
+                format_datetime(release.last_checked)
+                if release.last_checked else "—"
+              }}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td class="releases-empty" colspan="6">No releases found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

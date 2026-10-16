@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="insights-wrap">
+  <div class="insights-heading"><div><h1>Collection Insights</h1><p>Explore your collection by release quality and folder modification history.</p></div><span class="insights-pill">{{ counts.total }} releases</span></div>
+  <div class="insights-cards">
+    <div class="insights-card"><span>Total releases</span><strong>{{ counts.total }}</strong></div>
+    <div class="insights-card"><span>Collection started*</span><strong>{{ insights.collection_start.strftime('%b %Y') if insights.collection_start else 'Not recorded' }}</strong></div>
+    <div class="insights-card"><span>Modified in last 30 days*</span><strong>{{ insights.last_30 }}</strong></div>
+    <div class="insights-card"><span>Busiest year*</span><strong>{{ insights.busiest_year[0] if insights.busiest_year else '—' }}</strong><small>{{ insights.busiest_year[1] if insights.busiest_year else 0 }} releases</small></div>
+    <div class="insights-card"><span>Busiest month*</span><strong>{{ insights.busiest_month[0] if insights.busiest_month else '—' }}</strong><small>{{ insights.busiest_month[1] if insights.busiest_month else 0 }} releases</small></div>
+  </div>
+  <div class="insights-charts">
+    <section class="panel insights-panel"><h2>Release Quality</h2><canvas id="quality-chart" height="230" aria-label="Release quality breakdown"></canvas></section>
+    <section class="panel insights-panel"><div class="insights-heading"><h2>Collection Activity*</h2><select id="growth-mode"><option value="yearly">By year</option><option value="monthly">By month</option></select></div><canvas id="growth-chart" height="230" aria-label="Collection activity chart"></canvas></section>
+  </div>
+  <section class="panel insights-panel"><h2>10 Most Recently Modified Movie Folders*</h2><div class="insights-recent">{% for r in insights.recent_additions %}<div><span>{{ r.folder_name }}</span><time>{{ r.folder_modified_at.strftime('%Y-%m-%d') }}</time></div>{% else %}<p>No folder timestamps recorded yet. Run an inventory scan to populate this history.</p>{% endfor %}</div></section>
+  <p class="insights-note">* Historical activity uses movie folder modification dates, not confirmed acquisition dates. A rename, move, or file change can alter these dates. {{ insights.dated_count }} of {{ counts.total }} present releases have timestamps; run an inventory scan to update them.</p>
+</section>
+<script>
+(function(){
+ const quality={{ insights.quality|tojson }}, yearly={{ insights.yearly|tojson }}, monthly={{ insights.monthly|tojson }};
+ const palette=['#52d66d','#4688e8','#e6ac4d','#a379d8','#8094a8'];
+ function renderBars(canvas,rows){const c=canvas.getContext('2d'),w=canvas.clientWidth,h=canvas.height,dpr=window.devicePixelRatio||1;canvas.width=w*dpr;canvas.height=h*dpr;c.scale(dpr,dpr);c.clearRect(0,0,w,h);const max=Math.max(1,...rows.map(x=>x.count));const pad=32;const barWidth=Math.max(4,(w-pad*2)/Math.max(rows.length,1)*.65);rows.forEach((r,i)=>{const x=pad+i*(w-pad*2)/rows.length;const bh=(h-65)*r.count/max;c.fillStyle=palette[i%palette.length];c.fillRect(x,h-37-bh,barWidth,bh);c.fillStyle='#dce7f0';c.font='11px sans-serif';c.fillText(r.count,x,h-42-bh);c.fillStyle='#9eb1c4';c.save();c.translate(x,h-21);c.rotate(-.55);c.fillText(r.label,0,0);c.restore();});}
+ const q=document.getElementById('quality-chart'),g=document.getElementById('growth-chart'),mode=document.getElementById('growth-mode');
+ function redraw(){renderBars(q,quality);renderBars(g,mode.value==='monthly'?monthly:yearly);}
+ mode.addEventListener('change',redraw);window.addEventListener('resize',redraw);redraw();
+})();
+</script>
+
+<section class="heading">
+  <div>
+    <h1>Archive Health</h1>
+    <p>Exact folder-name validation against SRRDB.</p>
+  </div>
+  <div class="scan-control-block">
+    <div class="scan-actions">
+      <form method="post" action="/scan/start">
+        <button id="start-button">Start Scan</button>
+      </form>
+      <form method="post" action="/scan/stop">
+        <button id="stop-button" class="secondary-button">Stop Scan</button>
+      </form>
+    </div>
+    <p class="last-successful-scan" id="last-successful-main">
+      Last successful scan:
+      <strong>
+        {% if last_successful_scan %}
+          {{ format_datetime(last_successful_scan.completed_at, true) }}
+        {% else %}
+          Never
+        {% endif %}
+      </strong>
+    </p>
+  </div>
+</section>
+
+<section class="notice">
+  Hidden/system folders:
+  <strong>
+    {{ "Skipped" if settings.skip_hidden_system_folders else "Included" }}
+  </strong>
+</section>
+
+<section
+  id="scan-progress"
+  class="panel progress-panel {% if not progress or not progress.is_running %}progress-idle{% endif %}"
+>
+  <div class="progress-heading">
+    <div>
+      <h2 id="progress-title">
+        {% if progress and progress.is_running %}
+          Scan in progress
+        {% elif progress and progress.phase == "failed" %}
+          Last scan failed
+        {% else %}
+          Scan Status
+        {% endif %}
+      </h2>
+      <p id="progress-message">
+        {{ progress.message if progress and progress.message else "Ready to scan." }}
+      </p>
+    </div>
+    <strong id="progress-count">
+      {{ progress.processed_count if progress else 0 }}
+      /
+      {{ progress.total_count if progress else 0 }}
+    </strong>
+  </div>
+
+  <div class="progress-track">
+    <div
+      id="progress-bar"
+      class="progress-bar"
+      style="width:
+        {% if progress and progress.total_count %}
+          {{ (progress.processed_count / progress.total_count * 100) | round(1) }}%
+        {% else %}
+          0%
+        {% endif %}
+      "
+    ></div>
+  </div>
+
+  <p class="current-release">
+    <span>Current release:</span>
+    <code id="current-release">
+      {{ progress.current_release if progress and progress.current_release else "—" }}
+    </code>
+  </p>
+
+  <div class="progress-stats">
+    <span>Verified <strong id="live-verified">{{ progress.verified_count if progress else 0 }}</strong></span>
+    <span>Unverified <strong id="live-unverified">{{ progress.unverified_count if progress else 0 }}</strong></span>
+    <span>Skipped <strong id="live-skipped">{{ progress.skipped_count if progress else 0 }}</strong></span>
+  </div>
+</section>
+
+<section class="cards">
+  <div class="card">
+    <strong>{{ counts.total }}</strong>
+    <span>Total</span>
+  </div>
+  <div class="card good">
+    <strong>{{ counts.verified }}</strong>
+    <span>Verified</span>
+  </div>
+  <div class="card warn">
+    <strong>{{ counts.unverified }}</strong>
+    <span>Unverified</span>
+  </div>
+  <div class="card">
+    <strong>{{ counts.pending }}</strong>
+    <span>Pending</span>
+  </div>
+
+  <div class="card">
+    <strong>{{ counts.missing }}</strong>
+    <span>Missing</span>
+  </div>
+  <a class="card" href="/duplicate-finder">
+    <strong>{{ counts.duplicate_groups }}</strong>
+    <span>Duplicate Groups</span>
+  </a>
+</section>
+
+<section class="panel collection-review-overview">
+  <div class="panel-heading-row">
+    <div>
+      <h2>Collection Review</h2>
+      <p>Manage the non-scene releases you still want to keep.</p>
+    </div>
+    <a class="button-link" href="/collection-review">Open Review Queue</a>
+  </div>
+
+  <div class="review-stat-grid">
+    <a href="/collection-review?review_status=pending">
+      <strong>{{ counts.review_pending }}</strong>
+      <span>Pending Review</span>
+    </a>
+    <a href="/collection-review?review_status=keep">
+      <strong>{{ counts.review_keep }}</strong>
+      <span>Keep</span>
+    </a>
+    <a href="/collection-review?review_status=replace">
+      <strong>{{ counts.review_replace }}</strong>
+      <span>Replace Later</span>
+    </a>
+    <a href="/collection-review?candidate_status=found">
+      <strong>{{ counts.candidate_found }}</strong>
+      <span>Candidate Found</span>
+    </a>
+    <a href="/collection-review?candidate_status=none">
+      <strong>{{ counts.candidate_missing }}</strong>
+      <span>No Candidate</span>
+    </a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Latest Scan</h2>
+
+  {% if latest_scan %}
+    <p>
+      <span class="badge {{ latest_scan.status }}">
+        {{ latest_scan.status }}
+      </span>
+      Started {{ format_datetime(latest_scan.started_at) }}
+    </p>
+    <p>
+      {{ latest_scan.folders_found }} scanned ·
+      {{ latest_scan.skipped_folders }} skipped ·
+      {{ latest_scan.new_folders }} new ·
+      {{ latest_scan.missing_folders }} missing
+    </p>
+
+    {% if latest_scan.error_message %}
+      <p class="error">{{ latest_scan.error_message }}</p>
+    {% endif %}
+  {% else %}
+    <p>No scan has run yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Recent Verification Results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Status</th>
+        <th>Matched Release</th>
+        <th>Checked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for release in recent_results %}
+        <tr>
+          <td>{{ release.folder_name }}</td>
+          <td>
+            <span class="badge {{ release.verification_status }}">
+              {{ release.verification_status|capitalize }}
+            </span>
+          </td>
+          <td>{{ release.matched_release or "—" }}</td>
+          <td>
+            {{ format_datetime(release.last_checked, true) }}
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4">No verification results yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Recently Seen</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Status</th>
+        <th>First Seen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for release in recent %}
+        <tr>
+          <td>{{ release.folder_name }}</td>
+          <td>
+            <span class="badge {{ release.verification_status }}">
+              {{ release.verification_status|capitalize }}
+            </span>
+          </td>
+          <td>{{ format_date(release.first_seen) }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="3">
+            Run the first scan to populate the archive.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+(() => {
+  const panel = document.getElementById("scan-progress");
+  const title = document.getElementById("progress-title");
+  const message = document.getElementById("progress-message");
+  const count = document.getElementById("progress-count");
+  const bar = document.getElementById("progress-bar");
+  const current = document.getElementById("current-release");
+  const verified = document.getElementById("live-verified");
+  const unverified = document.getElementById("live-unverified");
+  const skipped = document.getElementById("live-skipped");
+  const startButton = document.getElementById("start-button");
+  const stopButton = document.getElementById("stop-button");
+
+  let wasRunning = {{ "true" if progress and progress.is_running else "false" }};
+
+  async function refreshProgress() {
+    try {
+      const response = await fetch("/api/scan-status", {
+        cache: "no-store"
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const total = data.total_count || 0;
+      const processed = data.processed_count || 0;
+      const percent = total > 0 ? (processed / total) * 100 : 0;
+
+      title.textContent = data.is_running
+        ? (data.phase === "inventory" ? "Building searchable inventory" : "Verification in progress")
+        : data.phase === "failed"
+          ? "Last scan failed"
+          : "Scan Status";
+
+      message.textContent = data.message || "Ready to scan.";
+      count.textContent = `${processed} / ${total}`;
+      bar.style.width = `${Math.min(percent, 100)}%`;
+      current.textContent = data.current_release || "—";
+      verified.textContent = data.verified_count || 0;
+      unverified.textContent = data.unverified_count || 0;
+      skipped.textContent = data.skipped_count || 0;
+      const stopping = data.phase === "stopping";
+      startButton.disabled = data.is_running;
+      startButton.textContent = data.is_running ? "Scan Running" : "Start Scan";
+      stopButton.disabled = !data.is_running || stopping;
+      stopButton.textContent = stopping ? "Stopping..." : "Stop Scan";
+
+      panel.classList.toggle("progress-idle", !data.is_running);
+
+      if (wasRunning && !data.is_running) {
+        window.setTimeout(() => window.location.reload(), 700);
+      }
+
+      wasRunning = data.is_running;
+    } catch (error) {
+      console.debug("Unable to refresh scan progress", error);
+    }
+  }
+
+  refreshProgress();
+  window.setInterval(refreshProgress, 2000);
+})();
+</script>
+{% endblock %}

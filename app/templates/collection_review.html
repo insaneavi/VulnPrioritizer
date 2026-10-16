@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="heading collection-review-heading">
+  <div>
+    <h1>Collection Review</h1>
+    <p>
+      Present releases that could not be verified against SRRDB.
+      Record why you are keeping them for now.
+    </p>
+  </div>
+
+  <form method="post" action="/scan/refresh-library">
+    <button class="refresh-library-button" type="submit">
+      Refresh Library Changes
+    </button>
+  </form>
+</section>
+
+{% if request.query_params.get("refresh_started") %}
+  <section class="refresh-notice" id="refresh-notice">
+    <strong id="refresh-title">Library refresh started.</strong>
+    <span id="refresh-message">
+      Detecting folder changes and verifying newly discovered releases.
+    </span>
+  </section>
+{% endif %}
+
+<form class="filters" method="get">
+  <input
+    name="q"
+    value="{{ q }}"
+    placeholder="Search unverified releases"
+  >
+
+  <select name="review_status">
+    <option value="">All review statuses</option>
+    <option value="pending" {% if review_status == "pending" %}selected{% endif %}>
+      Pending
+    </option>
+    <option value="keep" {% if review_status == "keep" %}selected{% endif %}>
+      Keep
+    </option>
+    <option value="replace" {% if review_status == "replace" %}selected{% endif %}>
+      Replace
+    </option>
+    <option value="ignored" {% if review_status == "ignored" %}selected{% endif %}>
+      Ignored
+    </option>
+  </select>
+
+  <select name="candidate_status">
+    <option value="">All candidate results</option>
+    <option value="found" {% if candidate_status == "found" %}selected{% endif %}>
+      Candidate Found
+    </option>
+    <option value="none" {% if candidate_status == "none" %}selected{% endif %}>
+      No Candidate
+    </option>
+  </select>
+
+  <button>Filter</button>
+  <a class="secondary-link" href="/collection-review">Clear</a>
+</form>
+
+<section class="review-summary">
+  <strong>{{ items|length }}</strong>
+  <span>
+    release{{ "" if items|length == 1 else "s" }} in this view
+  </span>
+</section>
+
+<section class="review-list">
+  {% for release in items %}
+    <article class="panel review-card">
+      <div class="review-card-heading">
+        <div>
+          <h2>{{ release.folder_name }}</h2>
+          <div class="review-title-tools">
+            <span>
+              Search title:
+              <strong>{{ movie_title_from_release_name(release.folder_name) }}</strong>
+            </span>
+            <a
+              class="bluray-search-button"
+              href="{{ bluray_search_url(release.folder_name) }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Search Blu-ray.com
+            </a>
+          </div>
+          <div class="review-meta">
+            <span class="badge unverified">Unverified</span>
+            <span>
+              Last checked:
+              {{
+                format_datetime(release.last_checked)
+                if release.last_checked else "—"
+              }}
+            </span>
+            {% if release.last_reviewed %}
+              <span>
+                Last reviewed:
+                {{ format_datetime(release.last_reviewed) }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <span class="badge review-{{ release.review_status }}">
+          {{ release.review_status|capitalize }}
+        </span>
+      </div>
+
+      {% if release.error_message %}
+        <p class="verification-reason">
+          <strong>Verification reason:</strong>
+          {{ release.error_message }}
+        </p>
+      {% endif %}
+
+      {% if release.candidate_release %}
+        <section class="candidate-panel">
+          <div class="candidate-heading">
+            <div>
+              <span class="candidate-kicker">
+                Possible SRRDB match — manual review only
+              </span>
+              <h3>{{ release.candidate_release }}</h3>
+            </div>
+            <span class="candidate-score">
+              {{ release.candidate_score or 0 }}/100
+            </span>
+          </div>
+
+          <p class="candidate-warning">
+            This folder remains <strong>Unverified</strong>. Correct the
+            folder name outside iSiTSCENE and rescan to obtain an exact
+            verification.
+          </p>
+
+          {% if release.candidate_reason %}
+            <p class="candidate-reason">
+              <strong>Likely difference:</strong>
+              {{ release.candidate_reason }}
+            </p>
+          {% endif %}
+
+          <div class="candidate-actions">
+            <a
+              class="srrdb-candidate-button"
+              href="{{ release.candidate_url }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open SRRDB Candidate
+            </a>
+            {% if release.candidate_checked_at %}
+              <span>
+                Candidate checked:
+                {{
+                  format_datetime(release.candidate_checked_at)
+                }}
+              </span>
+            {% endif %}
+          </div>
+        </section>
+      {% else %}
+        <section class="candidate-panel candidate-empty">
+          <span class="candidate-kicker">Stage 2 candidate search</span>
+          <p>No sufficiently strong SRRDB candidate was found.</p>
+        </section>
+      {% endif %}
+
+      <form
+        class="review-form"
+        method="post"
+        action="/collection-review/{{ release.id }}"
+      >
+        <input type="hidden" name="q" value="{{ q }}">
+        <input
+          type="hidden"
+          name="active_filter"
+          value="{{ review_status }}"
+        >
+        <input
+          type="hidden"
+          name="candidate_filter"
+          value="{{ candidate_status }}"
+        >
+
+        <label>
+          Review decision
+          <select name="review_status">
+            <option value="pending" {% if release.review_status == "pending" %}selected{% endif %}>
+              Pending
+            </option>
+            <option value="keep" {% if release.review_status == "keep" %}selected{% endif %}>
+              Keep this version
+            </option>
+            <option value="replace" {% if release.review_status == "replace" %}selected{% endif %}>
+              Replace later
+            </option>
+            <option value="ignored" {% if release.review_status == "ignored" %}selected{% endif %}>
+              Ignore
+            </option>
+          </select>
+        </label>
+
+        <div class="comment-editor">
+          <span class="field-label">Quick comments</span>
+          <div
+            class="comment-presets"
+            role="group"
+            aria-label="Comment presets"
+          >
+            <button type="button" class="comment-preset"
+              data-comment="No Physical Blu-ray Release">
+              No Physical Blu-ray Release
+            </button>
+            <button type="button" class="comment-preset"
+              data-comment="Requested Movie">
+              Requested Movie
+            </button>
+            <button type="button" class="comment-preset"
+              data-comment="Personal Favorite">
+              Personal Favorite
+            </button>
+            <button type="button" class="comment-preset"
+              data-comment="Unable to Locate Scene Release">
+              Unable to Locate Scene Release
+            </button>
+            <button type="button"
+              class="comment-preset comment-other"
+              data-other="true">
+              Other
+            </button>
+          </div>
+
+          <label>
+            Comment
+            <textarea
+              name="review_comment"
+              rows="4"
+              placeholder="Choose a quick comment or enter a custom note."
+            >{{ release.review_comment or "" }}</textarea>
+          </label>
+        </div>
+
+        <div class="review-actions">
+          <button type="submit">Save Review</button>
+        </div>
+      </form>
+    </article>
+  {% else %}
+    <section class="panel empty-state">
+      <h2>No releases found</h2>
+      <p>
+        There are no present, unverified releases matching the current
+        search and filter.
+      </p>
+    </section>
+  {% endfor %}
+</section>
+
+<script>
+{% if request.query_params.get("refresh_started") %}
+const refreshTitle = document.getElementById("refresh-title");
+const refreshMessage = document.getElementById("refresh-message");
+let refreshObservedRunning = false;
+
+async function pollLibraryRefresh() {
+  try {
+    const response = await fetch("/api/scan-status", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Unable to read refresh status.");
+    }
+
+    const status = await response.json();
+    if (status.is_running) {
+      refreshObservedRunning = true;
+      refreshTitle.textContent = "Refreshing library changes…";
+      refreshMessage.textContent = status.message || "Refresh in progress.";
+      window.setTimeout(pollLibraryRefresh, 1000);
+      return;
+    }
+
+    if (refreshObservedRunning || status.phase === "refresh_complete") {
+      refreshTitle.textContent = "Library refresh complete.";
+      refreshMessage.textContent = status.message || "Reloading Collection Review…";
+      window.setTimeout(function () {
+        window.location.href = "/collection-review";
+      }, 900);
+      return;
+    }
+
+    window.setTimeout(pollLibraryRefresh, 500);
+  } catch (error) {
+    refreshTitle.textContent = "Library refresh status unavailable.";
+    refreshMessage.textContent = error.message;
+    window.setTimeout(pollLibraryRefresh, 2500);
+  }
+}
+
+pollLibraryRefresh();
+{% endif %}
+
+document.addEventListener("click", function (event) {
+  const button = event.target.closest(".comment-preset");
+  if (!button) {
+    return;
+  }
+
+  const form = button.closest(".review-form");
+  const textarea = form.querySelector(
+    'textarea[name="review_comment"]'
+  );
+
+  if (button.dataset.other === "true") {
+    textarea.value = "";
+    textarea.focus();
+    return;
+  }
+
+  textarea.value = button.dataset.comment || "";
+  textarea.focus();
+  textarea.setSelectionRange(
+    textarea.value.length,
+    textarea.value.length
+  );
+});
+</script>
+
+{% endblock %}

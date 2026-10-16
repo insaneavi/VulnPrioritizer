@@ -1,0 +1,468 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    inspect,
+    text,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+
+from .config import DATA_PATH, DATABASE_PATH
+
+DATA_PATH.mkdir(parents=True, exist_ok=True)
+
+engine = create_engine(
+    f"sqlite:///{DATABASE_PATH}",
+    connect_args={"check_same_thread": False},
+)
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Release(Base):
+    __tablename__ = "releases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    folder_name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    normalized_name: Mapped[str] = mapped_column(String, index=True)
+    verification_status: Mapped[str] = mapped_column(
+        String,
+        default="pending",
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(String, default="pending", index=True)
+    matched_release: Mapped[str | None] = mapped_column(String, nullable=True)
+    folder_modified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    first_seen: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_checked: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_present: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    ignored: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Personal collection-review workflow for present, unverified releases.
+    review_status: Mapped[str] = mapped_column(
+        String,
+        default="pending",
+        index=True,
+    )
+    review_comment: Mapped[str] = mapped_column(Text, default="")
+    last_reviewed: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    # Advisory Stage 2 SRRDB candidate. This never changes verification.
+    candidate_release: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+    candidate_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    candidate_score: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    candidate_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    candidate_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    # Shared cached movie metadata used by upgrades and duplicate detection.
+    imdb_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    imdb_lookup_status: Mapped[str] = mapped_column(
+        String, default="not_checked", index=True
+    )
+    imdb_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    imdb_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    imdb_source_release: Mapped[str | None] = mapped_column(String, nullable=True)
+    imdb_srrdb_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    imdb_manual_override: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    imdb_manual_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    movie_title: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    movie_year: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+
+
+class ScanRun(Base):
+    __tablename__ = "scan_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="running")
+    folders_found: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_folders: Mapped[int] = mapped_column(Integer, default=0)
+    new_folders: Mapped[int] = mapped_column(Integer, default=0)
+    missing_folders: Mapped[int] = mapped_column(Integer, default=0)
+    exact_matches: Mapped[int] = mapped_column(Integer, default=0)
+    unverified: Mapped[int] = mapped_column(Integer, default=0)
+    not_found: Mapped[int] = mapped_column(Integer, default=0)
+    api_errors: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ScanProgress(Base):
+    __tablename__ = "scan_progress"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    is_running: Mapped[bool] = mapped_column(Boolean, default=False)
+    phase: Mapped[str] = mapped_column(String, default="idle")
+    current_release: Mapped[str | None] = mapped_column(String, nullable=True)
+    processed_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_count: Mapped[int] = mapped_column(Integer, default=0)
+    verified_count: Mapped[int] = mapped_column(Integer, default=0)
+    unverified_count: Mapped[int] = mapped_column(Integer, default=0)
+    not_found_count: Mapped[int] = mapped_column(Integer, default=0)
+    api_error_count: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class UpgradeScan(Base):
+    __tablename__ = "upgrade_scans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="running")
+    eligible_count: Mapped[int] = mapped_column(Integer, default=0)
+    checked_count: Mapped[int] = mapped_column(Integer, default=0)
+    upgrades_found: Mapped[int] = mapped_column(Integer, default=0)
+    no_upgrade_count: Mapped[int] = mapped_column(Integer, default=0)
+    imdb_missing_count: Mapped[int] = mapped_column(Integer, default=0)
+    api_error_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class UpgradeResult(Base):
+    __tablename__ = "upgrade_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    release_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    current_release: Mapped[str] = mapped_column(String, index=True)
+    imdb_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String, default="not_checked", index=True)
+    candidate_count: Mapped[int] = mapped_column(Integer, default=0)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class UpgradeCandidate(Base):
+    __tablename__ = "upgrade_candidates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    upgrade_result_id: Mapped[int] = mapped_column(Integer, index=True)
+    release_name: Mapped[str] = mapped_column(String, index=True)
+    srrdb_url: Mapped[str] = mapped_column(Text)
+
+
+class UpgradeProgress(Base):
+    __tablename__ = "upgrade_progress"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    is_running: Mapped[bool] = mapped_column(Boolean, default=False)
+    phase: Mapped[str] = mapped_column(String, default="idle")
+    current_release: Mapped[str | None] = mapped_column(String, nullable=True)
+    processed_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_count: Mapped[int] = mapped_column(Integer, default=0)
+    upgrades_found: Mapped[int] = mapped_column(Integer, default=0)
+    no_upgrade_count: Mapped[int] = mapped_column(Integer, default=0)
+    imdb_missing_count: Mapped[int] = mapped_column(Integer, default=0)
+    api_error_count: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DuplicateScan(Base):
+    __tablename__ = "duplicate_scans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="running")
+    eligible_count: Mapped[int] = mapped_column(Integer, default=0)
+    checked_count: Mapped[int] = mapped_column(Integer, default=0)
+    cached_count: Mapped[int] = mapped_column(Integer, default=0)
+    looked_up_count: Mapped[int] = mapped_column(Integer, default=0)
+    group_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DuplicateProgress(Base):
+    __tablename__ = "duplicate_progress"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    is_running: Mapped[bool] = mapped_column(Boolean, default=False)
+    phase: Mapped[str] = mapped_column(String, default="idle")
+    current_release: Mapped[str | None] = mapped_column(String, nullable=True)
+    processed_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_count: Mapped[int] = mapped_column(Integer, default=0)
+    cached_count: Mapped[int] = mapped_column(Integer, default=0)
+    looked_up_count: Mapped[int] = mapped_column(Integer, default=0)
+    group_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DuplicateReview(Base):
+    __tablename__ = "duplicate_reviews"
+
+    group_key: Mapped[str] = mapped_column(String, primary_key=True)
+    review_status: Mapped[str] = mapped_column(String, default="unreviewed", index=True)
+    comment: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MovieList(Base):
+    __tablename__ = "movie_lists"
+
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    source_name: Mapped[str] = mapped_column(String, default="")
+    list_version: Mapped[str] = mapped_column(String, default="")
+    data_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class MovieListItem(Base):
+    __tablename__ = "movie_list_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    list_key: Mapped[str] = mapped_column(String, index=True)
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    imdb_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    aliases_json: Mapped[str] = mapped_column(Text, default="[]")
+    rating: Mapped[float | None] = mapped_column(nullable=True)
+
+
+class MovieListSync(Base):
+    __tablename__ = "movie_list_sync"
+
+    list_key: Mapped[str] = mapped_column(String, primary_key=True)
+    status: Mapped[str] = mapped_column(String, default="never")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    item_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MovieListMatch(Base):
+    __tablename__ = "movie_list_matches"
+
+    item_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    list_key: Mapped[str] = mapped_column(String, index=True)
+    release_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    match_method: Mapped[str | None] = mapped_column(String, nullable=True)
+    matched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MovieListCacheState(Base):
+    __tablename__ = "movie_list_cache_state"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    rebuilt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    item_count: Mapped[int] = mapped_column(Integer, default=0)
+    owned_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AppSetting(Base):
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    value: Mapped[str] = mapped_column(String, nullable=False)
+
+
+def _add_column_if_missing(
+    table_name: str,
+    column_name: str,
+    definition: str,
+) -> None:
+    inspector = inspect(engine)
+    if table_name not in inspector.get_table_names():
+        return
+
+    columns = {
+        column["name"]
+        for column in inspector.get_columns(table_name)
+    }
+
+    if column_name not in columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    f"ALTER TABLE {table_name} "
+                    f"ADD COLUMN {column_name} {definition}"
+                )
+            )
+
+
+def _migrate_schema() -> None:
+    _add_column_if_missing("releases", "folder_modified_at", "DATETIME")
+    _add_column_if_missing(
+        "scan_runs",
+        "skipped_folders",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
+    _add_column_if_missing(
+        "scan_runs",
+        "unverified",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
+    _add_column_if_missing(
+        "scan_progress",
+        "unverified_count",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
+    _add_column_if_missing(
+        "releases",
+        "verification_status",
+        "VARCHAR NOT NULL DEFAULT 'pending'",
+    )
+    _add_column_if_missing(
+        "releases",
+        "review_status",
+        "VARCHAR NOT NULL DEFAULT 'pending'",
+    )
+    _add_column_if_missing(
+        "releases",
+        "review_comment",
+        "TEXT NOT NULL DEFAULT ''",
+    )
+    _add_column_if_missing(
+        "releases",
+        "last_reviewed",
+        "DATETIME",
+    )
+    _add_column_if_missing(
+        "releases",
+        "candidate_release",
+        "VARCHAR",
+    )
+    _add_column_if_missing(
+        "releases",
+        "candidate_url",
+        "TEXT",
+    )
+    _add_column_if_missing(
+        "releases",
+        "candidate_score",
+        "INTEGER",
+    )
+    _add_column_if_missing(
+        "releases",
+        "candidate_reason",
+        "TEXT",
+    )
+    _add_column_if_missing(
+        "releases",
+        "candidate_checked_at",
+        "DATETIME",
+    )
+
+    _add_column_if_missing("releases", "imdb_id", "VARCHAR")
+    _add_column_if_missing(
+        "releases", "imdb_lookup_status", "VARCHAR NOT NULL DEFAULT 'not_checked'"
+    )
+    _add_column_if_missing("releases", "imdb_checked_at", "DATETIME")
+    _add_column_if_missing("releases", "imdb_error_message", "TEXT")
+    _add_column_if_missing("releases", "imdb_source_release", "VARCHAR")
+    _add_column_if_missing("releases", "imdb_srrdb_id", "VARCHAR")
+    _add_column_if_missing(
+        "releases", "imdb_manual_override", "BOOLEAN NOT NULL DEFAULT 0"
+    )
+    _add_column_if_missing("releases", "imdb_manual_updated_at", "DATETIME")
+    _add_column_if_missing("releases", "movie_title", "VARCHAR")
+    _add_column_if_missing("releases", "movie_year", "VARCHAR")
+    _add_column_if_missing("movie_lists", "source_name", "VARCHAR NOT NULL DEFAULT ''")
+    _add_column_if_missing("movie_lists", "list_version", "VARCHAR NOT NULL DEFAULT ''")
+    _add_column_if_missing("movie_lists", "data_updated_at", "DATETIME")
+    _add_column_if_missing(
+        "movie_list_items", "aliases_json", "TEXT NOT NULL DEFAULT '[]'"
+    )
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                UPDATE releases
+                SET verification_status =
+                    CASE
+                        WHEN status = 'verified' THEN 'verified'
+                        WHEN status = 'pending' THEN 'pending'
+                        WHEN status IN ('not_found', 'api_error') THEN 'unverified'
+                        WHEN status = 'missing' THEN
+                            CASE
+                                WHEN last_checked IS NULL THEN 'pending'
+                                ELSE 'unverified'
+                            END
+                        ELSE 'pending'
+                    END
+                WHERE verification_status IS NULL
+                   OR verification_status = ''
+                   OR verification_status = 'pending'
+                """
+            )
+        )
+
+
+def init_db() -> None:
+    Base.metadata.create_all(engine)
+    _migrate_schema()
+
+    db = SessionLocal()
+    try:
+        changed = False
+        if db.get(ScanProgress, 1) is None:
+            db.add(ScanProgress(id=1))
+            changed = True
+        if db.get(UpgradeProgress, 1) is None:
+            db.add(UpgradeProgress(id=1))
+            changed = True
+        if db.get(DuplicateProgress, 1) is None:
+            db.add(DuplicateProgress(id=1))
+            changed = True
+        if db.get(MovieListCacheState, 1) is None:
+            db.add(MovieListCacheState(id=1))
+            changed = True
+
+        # Reuse IMDb IDs already discovered by Collection Upgrade.
+        upgrade_rows = db.query(UpgradeResult).filter(UpgradeResult.imdb_id.isnot(None)).all()
+        for result in upgrade_rows:
+            release = db.get(Release, result.release_id)
+            if release and not release.imdb_id:
+                release.imdb_id = result.imdb_id
+                release.imdb_lookup_status = "found"
+                release.imdb_checked_at = result.checked_at
+                release.imdb_source_release = result.current_release
+                changed = True
+        if changed:
+            db.commit()
+    finally:
+        db.close()

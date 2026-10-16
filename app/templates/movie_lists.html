@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="heading">
+  <div>
+    <h1>Movie Lists</h1>
+    <p>Compare your collection against locally bundled, versioned movie lists.</p>
+  </div>
+</section>
+
+{% if request.query_params.get("reloaded") %}
+<section class="notice success">Bundled list reloaded successfully.</section>
+{% elif sync and sync.status == "failed" %}
+<section class="notice error">The last bundled-list import failed: {{ sync.error_message }}</section>
+{% endif %}
+
+<section class="movie-list-grid">
+  {% for summary in summaries %}
+  <a class="movie-list-card {% if summary.list.key == list_key %}active{% endif %}"
+     href="/movie-lists?list_key={{ summary.list.key }}">
+    <h2>{{ summary.list.name }}</h2>
+    <strong>{{ summary.owned }} / {{ summary.total }}</strong>
+    <span>{{ summary.completion }}% complete</span>
+    <small>Data as of {{ format_date(summary.list.data_updated_at) }}</small>
+  </a>
+  {% endfor %}
+</section>
+
+{% if movie_list %}
+<section class="panel movie-list-header">
+  <div>
+    <h2>{{ movie_list.name }}</h2>
+    <p>{{ movie_list.description }}</p>
+    <div class="list-date-row">
+      <span>List data date: <strong>{{ format_date(movie_list.data_updated_at) }}</strong></span>
+      <span>List cached locally: <strong>{{ format_datetime(movie_list.updated_at, true) if movie_list.updated_at else "Never" }}</strong></span>
+      <span>Ownership cache: <strong>{{ format_datetime(cache_state.rebuilt_at, true) if cache_state and cache_state.rebuilt_at else "Not built" }}</strong></span>
+      <span>Version: <strong>{{ movie_list.list_version or "—" }}</strong></span>
+      <span>Source: <a href="{{ movie_list.source_url }}" target="_blank" rel="noopener">{{ movie_list.source_name }}</a></span>
+    </div>
+  </div>
+  <form method="post" action="/movie-lists/{{ movie_list.key }}/reload"
+        onsubmit="return confirm('Reload this list from the bundled application snapshot?');">
+    <button>Reload Bundled List</button>
+  </form>
+</section>
+
+<section class="cards">
+  <div class="card"><strong>{{ total }}</strong><span>Titles</span></div>
+  <div class="card good"><strong>{{ owned }}</strong><span>Owned</span></div>
+  <div class="card warn"><strong>{{ missing }}</strong><span>Missing</span></div>
+  <div class="card"><strong>{{ completion }}%</strong><span>Complete</span></div>
+</section>
+
+<form class="filters" method="get">
+  <input type="hidden" name="list_key" value="{{ list_key }}">
+  <select name="view">
+    <option value="all" {% if view == "all" %}selected{% endif %}>All Movies</option>
+    <option value="owned" {% if view == "owned" %}selected{% endif %}>Owned Only</option>
+    <option value="missing" {% if view == "missing" %}selected{% endif %}>Missing Only</option>
+  </select>
+  <input name="q" value="{{ q }}" placeholder="Search title or year">
+  <button>Filter</button>
+</form>
+
+<section class="panel">
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Movie</th><th>Year</th><th>Status</th><th>Match</th><th>Owned Release</th></tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>#{{ row.item.rank }}</td>
+          <td>
+            {% if row.item.imdb_id %}
+            <a href="https://www.imdb.com/title/{{ row.item.imdb_id }}/" target="_blank" rel="noopener">{{ row.item.title }}</a>
+            {% else %}
+            {{ row.item.title }}
+            {% endif %}
+          </td>
+          <td>{{ row.item.year }}</td>
+          <td><span class="badge {{ "verified" if row.release else "unverified" }}">{{ "Owned" if row.release else "Missing" }}</span></td>
+          <td>{{ row.match_method or "—" }}</td>
+          <td>{{ row.release.folder_name if row.release else "—" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">No movies match this filter.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

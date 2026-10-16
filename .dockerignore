@@ -1,13 +1,5 @@
 .git
-.venv
 __pycache__
 *.pyc
-*.csv
-*.xlsx
-*.xls
-uploads
-temp
-exports
-data
+*.db
 .env
-.env.*

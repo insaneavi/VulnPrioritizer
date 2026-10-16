@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="heading review-heading review-page-heading">
+  <div>
+    <h1>IMDb Metadata Review</h1>
+    <p>
+      Review releases where SRRDB did not provide usable IMDb metadata.
+      Search IMDb, enter the correct ID, and save several corrections together.
+    </p>
+  </div>
+  <a class="button-link secondary-button" href="/collection-upgrade">
+    Back to Collection Upgrade
+  </a>
+</section>
+
+{% if request.query_params.get("saved") %}
+<section class="notice success">
+  Saved {{ request.query_params.get("saved") }} IMDb correction{% if request.query_params.get("saved") != "1" %}s{% endif %}.
+  Collection Upgrade and Movie Lists will use the corrected metadata.
+</section>
+{% endif %}
+
+{% if request.query_params.get("invalid") %}
+<section class="notice error">
+  Skipped {{ request.query_params.get("invalid") }} invalid value{% if request.query_params.get("invalid") != "1" %}s{% endif %}.
+  IMDb IDs must use the format <strong>tt1234567</strong>.
+</section>
+{% endif %}
+
+<section class="metadata-summary-grid">
+  <a class="metadata-summary-card {% if status == 'metadata_missing' %}active{% endif %}"
+     href="/imdb-metadata-review?status=metadata_missing">
+    <span class="summary-label">Metadata Missing</span>
+    <strong>{{ counts.metadata_missing }}</strong>
+    <small>SRRDB responded without an IMDb ID</small>
+  </a>
+
+  <a class="metadata-summary-card {% if status == 'unavailable' %}active{% endif %}"
+     href="/imdb-metadata-review?status=unavailable">
+    <span class="summary-label">IMDb Unavailable</span>
+    <strong>{{ counts.unavailable }}</strong>
+    <small>No usable IMDb result was returned</small>
+  </a>
+
+  <a class="metadata-summary-card danger {% if status == 'api_error' %}active{% endif %}"
+     href="/imdb-metadata-review?status=api_error">
+    <span class="summary-label">True API Errors</span>
+    <strong>{{ counts.api_error }}</strong>
+    <small>Network, timeout, or malformed response</small>
+  </a>
+
+  <a class="metadata-summary-card good {% if status == 'manual' %}active{% endif %}"
+     href="/imdb-metadata-review?status=manual">
+    <span class="summary-label">Manual Overrides</span>
+    <strong>{{ counts.manual }}</strong>
+    <small>Metadata already corrected manually</small>
+  </a>
+</section>
+
+<section class="panel metadata-filter-panel">
+  <form class="metadata-filter-grid" method="get">
+    <label>
+      <span>Search releases</span>
+      <input name="q" value="{{ q }}" placeholder="Movie title or release name">
+    </label>
+
+    <label>
+      <span>Review status</span>
+      <select name="status">
+        <option value="needs_review" {% if status == "needs_review" %}selected{% endif %}>All Needing Review</option>
+        <option value="metadata_missing" {% if status == "metadata_missing" %}selected{% endif %}>Metadata Missing</option>
+        <option value="unavailable" {% if status == "unavailable" %}selected{% endif %}>IMDb Unavailable</option>
+        <option value="api_error" {% if status == "api_error" %}selected{% endif %}>True API Errors</option>
+        <option value="manual" {% if status == "manual" %}selected{% endif %}>Manual Overrides</option>
+      </select>
+    </label>
+
+    <button type="submit">Apply Filter</button>
+  </form>
+</section>
+
+<form method="post" action="/imdb-metadata-review/save">
+  <input type="hidden" name="q" value="{{ q }}">
+  <input type="hidden" name="status" value="{{ status }}">
+
+  <div class="bulk-review-toolbar sticky-review-toolbar">
+    <div>
+      <strong>{{ rows|length }}</strong>
+      release{% if rows|length != 1 %}s{% endif %} in this view
+    </div>
+    <button type="submit">Save All Entered IMDb IDs</button>
+  </div>
+
+  <section class="metadata-review-grid">
+  {% for row in rows %}
+    <article class="metadata-review-card-v3 status-{{ row.result.status }}">
+      <div class="review-card-header">
+        <div>
+          <span class="review-column-label">Release</span>
+          <div class="release-name">{{ row.result.current_release }}</div>
+        </div>
+        <a class="button-link secondary-button review-search-button"
+           href="{{ row.imdb_search_url }}"
+           target="_blank"
+           rel="noopener">
+          Search IMDb
+        </a>
+      </div>
+
+      <div class="review-card-divider"></div>
+
+      <div class="review-card-body">
+        <div class="review-info-block">
+          <span class="review-column-label">Status</span>
+          <div class="review-badge-row">
+            <span class="badge {{ row.result.status }}">
+              {{ row.result.status.replace("_", " ").title() }}
+            </span>
+            {% if row.release.imdb_manual_override %}
+            <span class="badge manual-override">Manual override</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="review-info-block">
+          <span class="review-column-label">Parsed Movie</span>
+          <div class="review-metadata-value">
+            <strong>{{ row.title or "Unknown title" }}</strong>
+            <span>{{ row.year or "Unknown year" }}</span>
+          </div>
+        </div>
+
+        <div class="review-info-block review-error-block">
+          <span class="review-column-label">SRRDB Result</span>
+          {% if row.result.error_message %}
+          <p class="review-error-message">{{ row.result.error_message }}</p>
+          {% else %}
+          <p class="review-muted-message">No additional error message.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="review-card-divider"></div>
+
+      <div class="review-card-footer">
+        <label for="imdb-{{ row.release.id }}">IMDb ID</label>
+        <input
+          id="imdb-{{ row.release.id }}"
+          name="imdb_{{ row.release.id }}"
+          value="{{ row.release.imdb_id or '' }}"
+          placeholder="tt1234567"
+          pattern="tt[0-9]{7,10}"
+          autocomplete="off"
+        >
+      </div>
+    </article>
+  {% else %}
+    <section class="empty-state metadata-empty-state">
+      <h2>No releases match this filter</h2>
+      <p>Try another filter or search term.</p>
+    </section>
+  {% endfor %}
+  </section>
+
+  {% if rows %}
+  <div class="bulk-review-footer">
+    <span>Review complete?</span>
+    <button type="submit">Save All Entered IMDb IDs</button>
+  </div>
+  {% endif %}
+</form>
+
+{% if status == "manual" %}
+<section class="panel manual-override-help">
+  <strong>Removing an override</strong>
+  <p>
+    Use the Releases page or Duplicate Finder to restore the original SRRDB IMDb value.
+  </p>
+</section>
+{% endif %}
+{% endblock %}

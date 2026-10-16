@@ -1,263 +1,281 @@
-# VulnPrioritizer
-
-## v0.8.3.1 — Rapid7 Analysis Performance Hotfix (2026-10-14)
-- Replaced repeated per-asset scans of all findings for KEV and high-EPSS counts with grouped unique-CVE calculations, avoiding Gunicorn timeouts on large exports.
-- Header version and release date now derive from the latest in-app Release Notes entry.
-- Preserves v0.8.3 network classification, 250 MB upload support, and Head Office reporting.
-
-## v0.8.3 — Authoritative Network Boundaries & 250 MB Uploads (2026-10-14)
-
-- Increased CSV maximum size from **100 MB to 250 MB** in Flask and drag-and-drop validation. Files must still pass existing CSV/schema checks; large files may require additional container RAM.
-- Replaced broad `9.63.0.0/16 → NYC` with **only** `9.63.94.0/23`, `9.63.96.0/23`, `9.63.98.0/23`, `9.63.104.0/23`, `9.63.110.0/23` → NYC.
-- Added `9.48.0.0/16 → UK` geolocation, with confirmed authoritative boundaries `9.48.140.0/23`, `9.48.142.0/23`, `9.48.192.0/23`. Other UK addresses have no assumed authoritative mask.
-- Kept `192.168.0.0/16 → Not Corporate Owned` and `172.18.252.0/24 → Service Express / UK`.
-- Network Excel now distinguishes **Observed Subnet** (chosen display prefix) from **Authoritative Subnet** (confirmed network boundary). Mixed display groupings may contain multiple authoritative subnets.
-- Updated Information page and release notes; existing Head Office report and finding-evidence behavior unchanged.
-
-## v0.8.2 — Finding Evidence & Enhanced Head Office Reporting (2026-09-30)
-
-- Added optional `finding_evidence` support from Rapid7 finding-level vulnerability-instance proof.
-- Head Office report now shows the full Rapid7 vulnerability title for the headline CVE.
-- Each affected asset under the headline CVE now shows its own Rapid7 finding-level evidence when supplied.
-- Evidence is matched only to the same asset + headline CVE and is never inferred or copied from another vulnerability.
-- **Also Expected to Resolve** now shows both CVE identifier and Rapid7 vulnerability title.
-- Security Excel **Raw Rapid7 Data** now includes remediation fields and `finding_evidence`.
-- Updated Reporting, Information, and report-methodology documentation.
-
-## v0.8.1 — Network Ownership & Head Office Remediation Reporting (2026-09-30)
-
-- Added **Managed By** and **Geolocation** to Network Breakdown and the Network Excel export.
-- Added network rules: `192.168.0.0/16` → Managed By `Not Corporate Owned`; `172.18.252.0/24` → `Service Express` / `UK`; `9.63.0.0/16` → Geolocation `NYC` with Managed By intentionally blank.
-- Added Rapid7 Asset ID `63789` and `63877` overrides as **NetApp** with explicit classification provenance.
-- Added optional remediation fields: `solution_id`, `solution_summary`, `solution_fix`, `solution_estimate`, `finding_evidence`.
-- Removed the Operations/Patching report from the current application and replaced it with the **Head Office Vulnerability Report**.
-- Head Office reporting groups findings by Rapid7 solution, uses the highest-CVSS CVE as the headline, uses Rapid7 `solution_summary` as Resolution, lists affected short hostnames, and lists other CVEs associated with the same solution.
-- Added browser review, **Copy Report**, and **Download TXT**.
-- Updated the Reporting and Information pages with the new methodology.
-
-## v0.8.0 — Network Visibility & Secure Upload (2026-09-28)
-
-- Added secure drag-and-drop Rapid7 CSV selection with browse fallback and explicit Analyze confirmation.
-- Added server-side 100 MB size limit, CSV extension checks, UTF-8/binary-content checks, and existing required-column validation.
-- Added `PHLAP*` → Workstation / London / Kyndryl.
-- Added `HLUKLON*` → Printer / London / Kyndryl.
-- Added Network Breakdown with configurable IPv4 prefix (default `/24`) and observed-subnet/unique-asset counts.
-- Subnet asset counts are clickable and filter the detailed asset table.
-- Added Network Breakdown Excel export with Network Summary, Asset Detail, and Report Information.
-- Network results are labeled **Observed Subnets** because this export cannot by itself prove complete Rapid7 scanner coverage.
-
-## v0.7.4 — Workstation Classification & Interactive Asset Review (2026-09-25)
-
-- Renamed Laptop to Workstation.
-- NYL*, NYV*, and NYD* now classify as Workstation / New York / Internal.
-- Asset Classification Review Asset Group counters are clickable and automatically filter the table below.
-- Classification documentation/report terminology updated.
-
-## v0.7.3 — Asset Classification Reporting Fix (2026-09-25)
-
-- Fixed the v0.7.2 Docker startup failure caused by the missing `xlsxwriter` package.
-- Asset Classification Excel reporting now uses the existing `openpyxl` dependency.
-- Preserves Classification Summary, Classification Detail, UNKNOWN Assets, classification provenance, and scan-status colors.
-
-## v0.7.2 — Asset Classification Review & Reporting (2026-09-25)
-
-- Added dedicated Asset Classification Review page with one row per Rapid7 asset.
-- Added filters for Asset Group, Location, Classification Source, and Scan Status.
-- Added Classification Rule provenance showing exactly why each asset received its tags.
-- Added dedicated Excel classification audit export with Summary, Detail, and UNKNOWN Assets worksheets.
-- Corrected Information page to show all current rules, wildcard notation, and precedence.
-- Scan freshness remains color coded and does not change vulnerability priority.
-
-## v0.7.1 — Asset Classification Rule Corrections (2026-09-25)
-- Changed asset naming rules to prefix/wildcard matching (`NYL*`, `NYP*`, `HLSNY*`, `HLSI*`, `SLD*`) rather than fixed digit counts.
-- Added `HLSNY200*` and exact `HLSNY201` as NetApp overrides.
-- Added `LHT*` as IBM iSeries.
-- Added VMware ESXi Server classification from explicit Rapid7 OS data.
-- Preserves Rapid7 OS values and records classification provenance.
-- Updated Information page with rule precedence and UNKNOWN handling.
-
-
-A lightweight, Docker-based vulnerability review and prioritization dashboard built around Rapid7 finding-level exports.
-
-## Current Release — v0.8.3.1
-
-VulnPrioritizer now enriches Rapid7 CVEs using **locally cached bulk threat-intelligence datasets**.
-
-### v0.4.1 highlights
-- Fixed investigation sessions across multiple Gunicorn workers
-- Shared temporary container-filesystem analysis storage
-- Rapid7 sessions remain non-persistent and outside the threat-intelligence volume
-- Atomic temporary-session writes and bounded session cleanup
-
-### v0.4.0 highlights
-- Clickable CVE and asset investigation
-- Dedicated CVE Investigation pages
-- Dedicated Asset Investigation pages
-- Bidirectional CVE → Asset → CVE navigation
-- CISA KEV investigation context
-- Temporary in-memory analysis sessions; no Rapid7 database
-- Breadcrumbs and investigation-table search
-
-### v0.3.0 highlights
-- Host/local timezone support and human-readable timestamps
-- New Information page explaining CVSS, EPSS, percentile and CISA KEV
-- End-to-end VulnPrioritizer workflow documentation
-- Data-handling/privacy and corporate network documentation
-- Dashboard intelligence tooltips
-- New Priority Review tab using transparent exploitation/severity signals
-
-### v0.2.0 highlights
-- FIRST EPSS bulk dataset synchronization
-- CISA Known Exploited Vulnerabilities (KEV) synchronization
-- Local-only CVE matching; Rapid7 findings are not sent to FIRST or CISA
-- Persistent Docker volume for public threat-intelligence catalogs
-- Dataset date/version, last attempted update, and last successful update
-- Manual ad-hoc threat-intelligence refresh
-- Detailed DNS / TCP / TLS / HTTP diagnostics
-- Last-known-good catalog protection
-- EPSS probability and percentile in Vulnerability Overview
-- KEV status, KEV asset counts, and EPSS threshold filtering
-- In-app Release Notes page
-
-## Network requirements
-
-Runtime threat-intelligence updates require outbound HTTPS/TCP 443 access to:
-
-| Purpose | Destination |
-|---|---|
-| FIRST EPSS bulk dataset | `epss.empiricalsecurity.com` |
-| CISA KEV JSON feed | `www.cisa.gov` |
-
-No Rapid7 IP addresses, hostnames, Rapid7 asset IDs, or organization-specific vulnerability report is transmitted to these sources.
-
-## Portainer / Docker
-
-The included Compose file publishes the application on port `8085` and creates the persistent named volume `vulnprioritizer_intel`.
-
-After updating the Git repository, redeploy/rebuild the Portainer stack.
-
-## Rapid7 input
-
-Expected columns:
-
-`asset_id`, `ip_address`, `hostname`, `nexpose_id`, `cve`, `title`, `date_published`, `severity_score`, `cvss_v3_score`
-
-Optional asset/scan fields:
-
-`operating_system`, `os_vendor`, `os_family`, `os_name`, `os_version`, `os_architecture`, `last_scan_date`
-
-Optional remediation fields used by the Head Office Vulnerability Report:
-
-`solution_id`, `solution_summary`, `solution_fix`, `solution_estimate`, `finding_evidence`
-
-`last_scan_data` is also accepted as a compatibility alias for randomized/test exports. Scan freshness: Current <3 days; Aging 3–10 days; Stale >10 days; Unknown = no valid scan date.
-
-Rapid7 uploads are processed transiently and are not intentionally persisted by the application.
-
----
-
-# Release Notes
-
-## v0.6.3 — 2026-09-23 — Rapid7 Scan Freshness
-- Added optional Rapid7 `last_scan_date` ingestion (`last_scan_data` compatibility alias).
-- Added dynamic Last Scan, Scan Age, and Scan Status throughout asset review.
-- Freshness thresholds: Current <3 days; Aging 3–10 days; Stale >10 days; Unknown when no valid scan date exists.
-- Added scan freshness to Security and Operations reports and data-quality summaries.
-- Scan freshness is a data-confidence indicator and does not change priority ranking.
-
-
-## v0.6.2 — 2026-09-22 — Transparent Review Prioritization
-- Added explained default prioritization to Vulnerability Overview and Asset Overview.
-- Vulnerabilities: KEV → EPSS → CVSS → affected assets → age/context.
-- Assets: KEV count → High EPSS count → Critical CVSS findings → maximum CVSS → overall exposure.
-- Added visible Priority Signals so users can understand why records appear near the top.
-- Added the same methodology to the Security Excel report; no proprietary risk score is introduced.
-
-
-## v0.6.1 — 2026-09-21 — Operations Patching Report
-- Added a separate downstream Operations/Patching workbook.
-- Added OS-aware Windows 10, Windows 11, Windows Server, generic Windows, and Microsoft Edge patch campaigns.
-- Every campaign includes its generation date/time, affected assets, findings, CVEs, KEV and high-EPSS context.
-- Added technical asset worksheets and consolidated Campaign Finding Data for Operations filtering/ticket creation.
-- Added optional Rapid7 OS fields while preserving compatibility with the original nine-column export.
-- Operations guidance requires approved patch/change processes and post-patch validation.
-
-
-## v0.6.0 — 2026-09-21 — Reporting & Export
-- Added a Reporting page and generated Excel workbook with 10 purpose-built worksheets.
-- Added color-coded KEV, EPSS, CVSS, asset-exposure and data-quality indicators with explicit labels.
-- Added Attention Reason to explain why a CVE is surfaced.
-- Added Executive Summary, operational worksheets, report methodology and normalized Raw Rapid7 Data.
-- Rapid7 report data remains in temporary analysis-session storage only.
-
-
-## v0.5.0 — 2026-09-21 — Priority Drill-Down & Corporate Proxy
-- Clickable Priority Review drill-downs for KEV, High EPSS, Assets with KEV, and Critical Findings.
-- Persistent proxy configuration for EPSS/CISA KEV with Save, Test, Clear/Disable and optional authentication.
-- Separate configuration volume; Rapid7 analysis remains temporary.
-- TLS-inspection CA guidance; TLS verification remains enabled.
-
-
-## v0.4.1 — 2026-09-21 — Shared Investigation Session Hotfix
-- Fixed CVE/Asset Investigation links losing the current analysis when Gunicorn routed requests to another worker.
-- Replaced worker-local memory sessions with shared temporary container-filesystem sessions.
-- Rapid7 analysis remains non-persistent and is not stored in `vulnprioritizer_intel`.
-- Added atomic session writes and cleanup of older temporary sessions.
-- FIRST EPSS and CISA KEV persistence is unchanged.
-
-
-## v0.4.0 — 2026-09-21 — Investigation & Navigation
-- Added temporary in-memory analysis sessions for navigation without a Rapid7 database.
-- Added clickable CVEs, assets, and hostnames.
-- Added CVE Investigation with EPSS, percentile, KEV, CVSS, affected assets, and Rapid7 context.
-- Added CISA KEV detail fields where available.
-- Added Asset Investigation with CVE, KEV, high-EPSS, critical-finding, and severity context.
-- Added CVE-to-Asset-to-CVE navigation, breadcrumbs, and searchable investigation tables.
-- Updated Information documentation for temporary analysis sessions.
-
-
-## v0.3.0 — 2026-09-21 — Usability & Intelligence Guidance
-- Added host/local timezone support and human-readable local timestamps.
-- Added an Information page explaining the VulnPrioritizer workflow.
-- Added educational guidance for CVSS, EPSS, EPSS percentile, and CISA KEV.
-- Added data-handling/privacy and corporate network documentation.
-- Added contextual dashboard tooltips.
-- Added a Priority Review tab using transparent KEV, EPSS, CVSS, and affected-asset signals.
-- Continued to avoid a proprietary organizational risk score until business/CMDB context is available.
-
-
-## v0.2.1 — 2026-09-21 — Release Notes Hotfix
-- Fixed the Release Notes page 500 error caused by a Jinja dictionary key collision with the built-in `items()` method.
-- Confirmed FIRST EPSS bulk synchronization and local cache operation.
-- Confirmed CISA KEV bulk synchronization and local cache operation.
-- No changes to Rapid7 parsing, threat-intelligence matching, or persistent volume behavior.
-
-
-## v0.2.0 — 2026-09-21 — Threat Intelligence
-- Added local FIRST EPSS bulk-dataset synchronization.
-- Added local CISA KEV synchronization.
-- Added persistent last-known-good threat intelligence cache.
-- Added dataset date/version and update timestamps.
-- Added manual ad-hoc updates.
-- Added detailed network diagnostics for troubleshooting corporate firewall/proxy failures.
-- Added EPSS probability, EPSS percentile, and CISA KEV enrichment.
-- Added KEV and high-EPSS dashboard metrics and filters.
-- Added Threat Intelligence and Release Notes pages.
-- Rapid7 data remains transient and is not written to the threat-intelligence volume.
-
-## v0.1.0 — 2026-09-21 — Initial Foundation
-- Rapid7 CSV upload and validation.
-- Vulnerability Overview aggregated by CVE.
-- Asset Overview aggregated by Rapid7 asset.
-- Summary and data-quality metrics.
-- Docker/Portainer deployment support.
-- No application database.
-
-
-## v0.7.0 — Asset Classification & Inventory Visibility (2026-09-25)
-- Hostname-based asset tags: NYP* Printer/New York; NYL*, NYV*, and NYD* Workstation/New York; HLSNY* Server/New York; HLSI* Domain Controller/Other Team; SLD* Server/London.
-- Unmatched hostnames are explicitly classified as UNKNOWN for research; the application does not guess.
-- Operating system continues to come from Rapid7 data.
-- Asset Overview and Asset Investigation show classification context.
-- Scan status is visually coded: green Current (<3 days), yellow Aging (3–10), red Stale (>10), gray Unknown.
-- Information page documents all classification and scan-freshness logic.
+## Collection Insights (v0.17.4)
+Run a fresh inventory scan after upgrading to populate folder modification timestamps. These are **not** guaranteed acquisition dates. The scanner only stats movie folders, never movie files. Existing first-seen timestamps remain unchanged. The dashboard charts are drawn locally without a third-party chart CDN.
+
+What's New now includes a live refresh log and progress bar; Box Office Mojo diagnostics display calendar response size, row count, and parsing outcomes. Its source remains best-effort.
+
+## Movie Lists source audit — October 16, 2026
+
+All 12 bundled lists were inspected. Confirmed MCU update: Spider-Man: Brand New Day (2026) added with IMDb ID tt22084616, raising the MCU list from 37 to 38 films. Pixar already includes Hoppers and Toy Story 5; Star Wars already includes The Mandalorian and Grogu; Disney Animation already includes Zootopia 2. Historical AFI and completed franchise lists are unchanged. IMDb Top 100 and Top 250 are dynamic charts and were **not** re-scraped; their July 2026 ranking snapshots remain unchanged. All unchanged lists retain their original data dates.
+
+## What's New (v0.17.4)
+
+The What's New page is a read-only discovery view. Click **Refresh Feeds** to
+populate its on-disk JSON cache at `/config/whats_new_cache.json`. The refresh
+runs as a background task; reload the page to see results.
+
+- SRRDB: latest 50 matching UHD BluRay 2160p x265 and 1080p BluRay x264
+  releases (the second category is a provisional default), excluding MULTI
+  and GERMAN, with SRRDB dates and exact folder-name ownership.
+- Box Office Mojo: best-effort parsing of weekly domestic theatrical calendars
+  for the preceding 365 days. Pages without recognizable individual release
+  dates are skipped rather than assigned an invented date. The site has no
+  supported public API and may reject or change its HTML; errors are displayed,
+  and the last successful cache is retained.
+- Movie ownership uses normalized title and year. No movie or release is added
+  to the inventory.
+
+The existing bundled Movie Lists are unchanged in this release. Refreshing
+their actual source data and verifying IDs requires a separate source-by-source
+update. No SQLite migration is required.
+
+# iSiTSCENE v0.17.4
+
+iSiTSCENE inventories immediate movie-release folders and checks whether each
+folder name exactly matches a release registered in SRRDB.
+
+## New in v0.17.4
+
+- Fixes Pixar, Disney Animated Classics, and Studio Ghibli failing to import on upgraded SQLite databases.
+- Stores a blank compatibility value when a bundled title intentionally uses title/year fallback instead of an IMDb ID.
+- Automatically retries bundled lists whose previous import status is failed.
+- Existing DC Animated Movie Universe, MCU, and other cached lists remain unchanged.
+- No database schema migration is required.
+
+## New in v0.12.0
+
+- Adds Pixar Feature Films with 31 titles through Toy Story 5.
+- Adds Disney Animated Classics with 63 Walt Disney Animation Studios canon titles through Zootopia 2.
+- Adds the Marvel Cinematic Universe with 37 theatrical films through The Fantastic Four: First Steps.
+- Adds the official 15-film DC Animated Movie Universe continuity.
+- Refreshes the bundled Studio Ghibli snapshot date.
+- Each collection uses the existing owned/missing filters, completion cards, source date, version, and local cache timestamp.
+- New lists import automatically at application startup.
+- No database schema migration is required.
+
+## New in v0.12.0
+
+- Replaces fragile IMDb webpage scraping with bundled, versioned movie lists.
+- Includes IMDb Top 100, IMDb Top 250, Academy Award Best Picture Winners, AFI 100 Years…100 Movies, and Studio Ghibli Feature Films.
+- Imports all bundled lists automatically on first launch.
+- Adds independent Reload Bundled List controls.
+- Displays both the list data date and the local SQLite cache timestamp.
+- Adds overview cards showing owned count and completion percentage for every list.
+- Matches by IMDb ID first and title/year as a fallback where a bundled entry lacks an IMDb ID.
+- Keeps manual IMDb overrides authoritative during ownership matching.
+- Advances the automatic SQLite schema to version 13.
+
+## New in v0.12.0
+
+- Fixes IMDb Top 100 synchronization after IMDb removed the page structure previously expected by the importer.
+- Uses IMDb's official Top 250 chart and caches its first 100 ranked movies.
+- Adds JSON-LD, embedded JSON, and rendered HTML parsing fallbacks.
+- Sends browser-like request headers for improved compatibility.
+- Replaces the local cache only after all 100 records are parsed successfully.
+- Preserves the previous cache when IMDb is unavailable or changes its page again.
+- No database migration is required.
+
+## New in v0.12.0
+
+- Adds **Movie Lists** with an IMDb Top 100 collection-completion view.
+- Uses a manual Sync button and caches the list in SQLite.
+- Shows the cache date and never performs unnecessary automatic list refreshes.
+- Matches owned movies through exact cached IMDb IDs.
+- Shows All, Owned, and Missing views plus completion statistics.
+- Keeps the previous cache intact if a synchronization fails.
+
+## New in v0.12.0
+
+- Adds **Duplicate Finder** for different releases of the same movie.
+- Stores IMDb IDs directly on release records and reuses them in later scans.
+- Queries SRRDB only for new, changed, previously failed, or uncached releases.
+- Groups confirmed duplicates by IMDb ID and possible duplicates by normalized title and year.
+- Displays resolution, source, codec, release group, and edition-related tags.
+- Adds **Keep Both** and **Cleanup Needed** review states.
+- Includes independent Start, Stop, force-reset, live progress, and interrupted-scan recovery.
+- Updates Collection Upgrade to use the same shared IMDb cache.
+- Displays application version, build date, and Git commit in the web interface.
+- Exposes build information through `GET /api/version`.
+- Performs automatic SQLite schema migration; no manual database work is required.
+
+## New in v0.8.3.2
+
+- Fixes the remaining FastAPI route collision for Refresh Library Changes.
+- Moves the refresh action out of the dynamic Collection Review namespace to `POST /scan/refresh-library`.
+- Keeps the button on Collection Review while treating the operation as a scan action.
+- Retains live refresh-status polling and automatic Collection Review reload.
+- No database changes.
+
+## New in v0.8.3.1
+
+- Attempted to fix the Collection Review refresh route collision by renaming the endpoint.
+- Added live refresh-status polling and automatic Collection Review reload.
+
+## New in v0.8.3
+
+- Adds a Refresh Library Changes button to Collection Review.
+- Re-inventories only top-level movie-folder names.
+- Marks disappeared folders as Removed.
+- Adds newly discovered or renamed folders as new release records.
+- Verifies only newly discovered folders against SRRDB.
+- Leaves all unchanged releases untouched.
+- Uses the existing scan lock and progress tracking to prevent overlapping
+  full scans and library refreshes.
+- No database changes.
+
+## New in v0.8.2
+
+- Fixed Stage 2 candidate searches returning no results.
+- Removed the SRRDB `group:` search keyword currently rejected by the API.
+- Candidate searches now use title terms and score release metadata locally.
+- Fixed Blu-ray.com title-extraction regex escaping.
+- Releases without a year now stop before technical tags such as 1080p,
+  REPACK, BluRay, x264, and similar metadata.
+- No database changes.
+
+## New in v0.8.1
+
+- Redesigned the Releases page as a compact inventory list.
+- Expanded the page to use nearly the full browser width.
+- Reduced ordinary release rows to approximately 36 pixels high.
+- Added a fixed-height table with internal vertical and horizontal scrolling.
+- Added a sticky table header so column names remain visible.
+- Added column sizing, ellipsis handling, hover feedback, and compact badges.
+- No database or verification behavior changes.
+
+## New in v0.8
+
+- Adds Stage 2 advisory SRRDB candidate matching.
+- Exact folder-name equality remains the only path to Verified status.
+- Unverified releases can display a likely SRRDB candidate, score, likely
+  difference, direct link, and candidate-check timestamp.
+- Candidate matching compares title, group, resolution, source, codec,
+  release flags, and year.
+- Candidates below the confidence threshold are not displayed.
+- Adds Collection Review filters for Candidate Found and No Candidate.
+- Adds dashboard counts for candidate results.
+- Existing SQLite databases are upgraded automatically.
+
+## New in v0.7
+
+- Adds a Blu-ray.com search button to each Collection Review item.
+- Extracts the movie title using everything before the first four-digit year.
+- Converts scene-style dots and underscores into readable search text.
+- Opens the Blu-ray.com search in a new browser tab.
+- Adds quick-comment buttons:
+  - No Physical Blu-ray Release
+  - Requested Movie
+  - Personal Favorite
+  - Unable to Locate Scene Release
+  - Other
+- Other clears and focuses the comment field for custom text.
+
+## New in v0.6
+
+- Adds a dedicated Collection Review page.
+- Shows only present, unverified releases.
+- Adds personal review decisions: Pending, Keep, Replace, and Ignored.
+- Adds a persistent comment field for each reviewed release.
+- Tracks the date and time each review was last saved.
+- Adds dashboard review counts and direct links into the queue.
+- Automatically upgrades existing databases without deleting scan history.
+
+## New in v0.5
+
+- Separates inventory state from verification state.
+- Inventory is shown as Present or Removed.
+- Verification is shown as Pending, Verified, or Unverified.
+- Not Found, API Error, timeout, and malformed SRRDB responses display as Unverified.
+- The detailed technical reason remains visible beneath the release name.
+- Releases can be filtered independently by inventory and verification state.
+- Existing v0.4 databases are upgraded automatically.
+
+## v0.4.3 Releases search and branding fix
+
+- Fixes the Releases page template variable mismatch.
+- Releases can now be displayed and searched as soon as they enter inventory.
+- Adds the official iSiTSCENE icon to the repository.
+- Adds a browser favicon and header icon.
+- Adds the GitHub-hosted icon URL to the Unraid template.
+
+## v0.4.2 scanner recovery and controls
+
+- Recovers stale running state after a Docker or application restart.
+- Adds separate Start Scan and Stop Scan controls.
+- Cancels the active SRRDB HTTP request when Stop Scan is pressed.
+- Uses explicit network timeouts so an unresponsive release cannot block forever.
+- Saves completed verification results when a scan is stopped.
+- Leaves unfinished releases pending for the next scan.
+
+## v0.4.1 search availability fix
+
+- Inventory and SRRDB verification now run as separate phases.
+- The inventory is committed before slow verification begins.
+- Releases become searchable during an active scan.
+- Large inventories are committed in batches of 250 folders.
+- Scan progress clearly identifies inventory and verification phases.
+
+## New in v0.4
+
+- Live scan progress on the dashboard
+- Current release being checked
+- Processed and total counters
+- Live verified, not-found, API-error, and skipped counts
+- Automatic progress refresh every two seconds
+- Automatic dashboard refresh when a scan completes
+- Recent verification-results table
+
+## v0.3.1 bug fix
+
+- Fixes the scanner crash caused by calling `should_scan_folder()` without the current hidden/system-folder setting.
+- Preserves all v0.3 web settings and Docker behavior.
+
+## New in v0.3
+
+Application settings are now stored in SQLite and editable from the Web UI:
+
+- Skip hidden/system folders
+- Enable or disable automatic scans
+- Scan interval
+- SRRDB request delay
+
+Open:
+
+```text
+http://YOUR-UNRAID-IP:8080/settings
+```
+
+Changes apply immediately and do not require recreating the Docker container.
+
+## Docker configuration
+
+Only these Docker settings are required:
+
+| Type | Host / Value | Container / Key |
+|---|---|---|
+| Port | `8080` | `8080` |
+| Path | `/mnt/user/movies` | `/movies` (read-only) |
+| Path | `/mnt/user/appdata/isitscene` | `/config` (read/write) |
+| Variable | `America/New_York` | `TZ` |
+
+The following old Docker variables are no longer used and can be removed:
+
+```text
+SCAN_INTERVAL_HOURS
+SRRDB_DELAY_SECONDS
+SKIP_HIDDEN_SYSTEM_FOLDERS
+```
+
+Existing values in those variables will be ignored by v0.3.
+
+## Updating the repository
+
+Copy this ZIP's contents over your existing local repository, keeping the
+existing `.git` folder. Then run:
+
+```powershell
+git add .
+git commit -m "Add web based application settings"
+git push
+```
+
+After GitHub Actions succeeds, update the container in Unraid.
